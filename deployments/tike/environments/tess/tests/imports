@@ -18,3 +18,6 @@ bokeh
 #dask
 h5py
 requests
+
+juliet
+ultranest

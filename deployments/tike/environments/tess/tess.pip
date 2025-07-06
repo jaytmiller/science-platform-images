@@ -254,5 +254,6 @@ lksearch==1.1.0
 tesscube==1.0.5
 tess-point
 tesswcs==1.1.9
-juliet
+# ultranest
+# juliet
 triceratops

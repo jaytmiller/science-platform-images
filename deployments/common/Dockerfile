@@ -4,7 +4,7 @@
 # otherwise the latest from https://hub.docker.com/_/buildpack-deps will be used
 
 ARG BASE_IMAGE=spacetelescope/scipy-notebook
-FROM $BASE_IMAGE
+FROM "${BASE_IMAGE}"
 
 # ------------------------------------------------------------------------
 
@@ -167,10 +167,10 @@ COPY default-home-contents/   /etc/default-home-contents
 
 ENV  PIP_TOOLS_CACHE_DIR=$HOME/.cache/pip
 
+USER root
 COPY --chown=${NB_UID}:${NB_GID}  tools/  /opt/tools/
 COPY --chown=${NB_UID}:${NB_GID} VERSION /opt
 COPY --chown=${NB_UID}:${NB_GID} HASH /opt
 
-USER root
 RUN fix-permissions $HOME /opt/conda
 USER ${NB_UID}:${NB_GID}
