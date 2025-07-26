@@ -76,7 +76,9 @@ RUN /opt/common-scripts/apt-install \
         sysstat \
         net-tools \
         rename \
-        stress-ng \
+        stress-ng
+
+RUN /opt/common-scripts/apt-install \
         libxcomposite1 \
         libxdamage1 \
         libgtk-3-0t64 \

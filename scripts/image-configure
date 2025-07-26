@@ -57,7 +57,7 @@ def main():
     )
     parser.add_argument(
         "deployment",
-        choices=["tike", "roman", "jwebbinar"],
+        choices=["tike", "roman", "jwebbinar", "curator"],
         help="The deployment name defining image contents.",
     )
     parser.add_argument(
