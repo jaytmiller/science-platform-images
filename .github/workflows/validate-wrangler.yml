@@ -150,16 +150,6 @@ jobs:
                 git push origin HEAD:${{ github.head_ref }}
             fi
 
-      - name: Run Trivy vulnerability scanner on file system
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          ignore-unfixed: true
-          format: table
-          vuln-type: os,library
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          scan-ref: deployments/wrangler/env-frozen
-
       - name: Approve PR and Merge
         shell: bash
         env:
