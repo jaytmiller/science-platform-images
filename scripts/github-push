@@ -1,0 +1,8 @@
+#! /bin/bash
+
+set -eu
+
+git tag -f $GITHUB_IMAGE_ID  $NOTEBOOK_ID
+
+git push $GITHUB_IMAGE_ID
+

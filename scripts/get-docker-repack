@@ -1,0 +1,18 @@
+#! /bin/bash
+
+if ! which skopeo; then
+    sudo apt-get -y update
+    sudo apt-get -y install skopeo
+fi
+
+if [ ! -e docker-repack ]; then
+   ( cd $JUPYTERHUB_DIR
+     wget -q https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Linux-x86_64.tar.gz
+     tar zxf docker-repack-Linux-x86_64.tar.gz	
+     rm docker-repack-Linux-x86_64.tar.gz
+   )
+fi
+
+# ${JUPYTERHUB_DIR}/docker-repack $*
+
+

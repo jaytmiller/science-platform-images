@@ -16,4 +16,9 @@ export LD_LIBRARY_PATH=/usr/local/lib
 # make non-login shell (notebook !) use same environment, picking up default kernel
 export BASH_ENV=/etc/bash.bashrc
 
+
+export NBW_ROOT=/opt/nbw-live
+export NBW_PANTRY=${HOME}/.nbw-pantry
+
+
 alias ls="ls --color=auto"

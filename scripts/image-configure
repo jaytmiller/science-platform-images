@@ -6,7 +6,8 @@ import shutil
 
 
 def create_setup_env_file(
-    platform, deployment_name, environment, use_frozen, freeze, cal_version, owner
+    platform, deployment_name, environment, use_frozen, freeze, cal_version, owner,
+    base_notebook
 ):
     shutil.copy("setup-env.template", "setup-env")
 
@@ -45,6 +46,8 @@ def create_setup_env_file(
         else:
             content = re.sub(r"REGISTRY=.+", f'REGISTRY="{owner}/"', content)
 
+        content = re.sub(r"BASE_NOTEBOOK=.+", f"BASE_NOTEBOOK={base_notebook}", content)
+
     with open("setup-env", "w+") as file:
         file.write(content)
 
@@ -57,7 +60,7 @@ def main():
     )
     parser.add_argument(
         "deployment",
-        choices=["tike", "roman", "jwebbinar"],
+        choices=["tike", "roman", "jwebbinar", "wrangler"],
         help="The deployment name defining image contents.",
     )
     parser.add_argument(
@@ -98,6 +101,14 @@ def main():
         choices=["spacetelescope", "quay.io/jupyter"],
         help="Repo used to build or pull scipy-notebook image,  spacetelescope(build) or quay.io/jupyter(pull)",
     )
+    parser.add_argument(
+        "--base-notebook",
+        type=str,
+        default="scipy-notebook",
+        choices=["scipy-notebook", "minimal-notebook", "base-notebook", "pytorch-notebook", "tensorflow-notebook",
+                 "julia-notebook", "pyspark-notebook", "r-notebook", "all-spark-notebook"],
+        help="Docker-stacks notebook type to build or pull.  scipy-notebook(tike,roman,jwebbinar), minimal-notebook(wrangler)"
+    )
     args = parser.parse_args()
 
     create_setup_env_file(
@@ -108,6 +119,7 @@ def main():
         args.freeze,
         args.cal_version,
         args.owner,
+        args.base_notebook
     )
 
 
