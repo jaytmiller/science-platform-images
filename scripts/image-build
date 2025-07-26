@@ -24,7 +24,7 @@ image-update
 
 # ..................................................................................
 # Build base image, e.g. our version of scipy-notebook including cert handling
-if [[ ${BASE_IMAGE} == "spacetelescope/scipy-notebook" ]]; then
+if [[ ${OWNER} == "spacetelescope" ]]; then
     image-base
 else
     docker pull ${BASE_IMAGE}

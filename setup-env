@@ -6,14 +6,14 @@
 
 # ----------------- basic inputs,  must set for deployment --------------
 
-export DEPLOYMENT_NAME=tike
-export ENVIRONMENT=dev
+export DEPLOYMENT_NAME=curator
+export ENVIRONMENT=sandbox
 export CAL_VERSION=none
 
 export USE_FROZEN=0                  # use 0 for loosely pinned package versions,
                                      # 1 for tagged/frozen production build
 
-export FREEZE=1                      # dump new frozen requirements in image to modified files in this git repo
+export FREEZE=0                     # dump new frozen requirements in image to modified files in this git repo
 
 export PLATFORM=linux/amd64
 
@@ -31,7 +31,7 @@ export REGISTRY=""
 export OWNER=spacetelescope
 # export OWNER=spacetelescope
 
-export BASE_IMAGE=${OWNER}/scipy-notebook   # see above
+export BASE_IMAGE=${OWNER}/minimal-notebook   # see above
 
 export NOTEBOOK_TAG=latest
 export NOTEBOOK_ID=notebook-${DEPLOYMENT_NAME}:${NOTEBOOK_TAG}  # abstract name of mission-specific notebook image
