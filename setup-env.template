@@ -1,12 +1,14 @@
-
+#! /bin/bash
 # Clone and customize this for your deployment
 #
 # NOTE:  must be sourced from jupyterhub-deploy root directory
 #
 
+# set -eu # DO NOT 'set -eu' since this script is sourced and will kill the sourcing terminal/shell on error.
+
 # ----------------- basic inputs,  must set for deployment --------------
 
-export DEPLOYMENT_NAME=cluster-name  # roman, jwebbinar, tike
+export DEPLOYMENT_NAME=cluster-name  # roman, jwebbinar, tike, wrangler
 export ENVIRONMENT=sandbox           # sandbox, dev, test, prod, int
 export CAL_VERSION=none              # e.g. roman or jwst x.y.z CAL release, latest, or none
 
@@ -21,8 +23,11 @@ export PLATFORM="linux/amd64"       # os / instruction-set for built image: linu
 
 # Set to "" (empty) for source build,  or quay.io/jupyter/ for current docker-stacks image.
 # jupyter is now at quay.io/jupyter/  needed to obtain fresh builds.  trailing backslash required
-export REGISTRY=""
-# export REGISTRY="quay.io/jupyter/" 
+
+
+
+export REGISTRY=""   
+# export REGISTRY="quay.io/jupyter/"
 
 
 
@@ -31,12 +36,25 @@ export REGISTRY=""
 export OWNER="spacetelescope"
 # export OWNER="quay.io/jupyter"
 
-export BASE_IMAGE=${OWNER}/scipy-notebook   # see above
+export BASE_NOTEBOOK="scipy-notebook"  # minimal-notebook
+
+export BASE_IMAGE=${OWNER}/${BASE_NOTEBOOK}
 
 export NOTEBOOK_TAG=latest
 export NOTEBOOK_ID=notebook-${DEPLOYMENT_NAME}:${NOTEBOOK_TAG}  # abstract name of mission-specific notebook image
+# export NOTEBOOK_ID_SLIM=${NOTEBOOK_ID}-slim  # this is implied by repack,  refactor if you really need it.
 
-export UBUNTU_TAG="24.04"	     # # Image scanning,  report Ubuntu status for this version of Ubuntu
+export DATE_TAG=$(date -u +'%Y-%m-%d-%H-%M-%S')
+export GITHUB_REG="ghcr.io"
+export GITHUB_ORG=jaytmiller
+# export GITHUB_ORG=spacetelescope
+export GITHUB_REPO=science-platform-images
+export GITHUB_TAG=notebook-${DEPLOYMENT_NAME}-${DATE_TAG}
+export GITHUB_UNTAGGED_ID=${GITHUB_REG}/${GITHUB_ORG}/${GITHUB_REPO}
+export GITHUB_IMAGE_ID=${GITHUB_REG}/${GITHUB_ORG}/${GITHUB_REPO}:${GITHUB_TAG}
+export GITHUB_IMAGE_SLIM_ID=${GITHUB_IMAGE_ID}-slim
+
+export UBUNTU_TAG="24.04"            # # Image scanning,  report Ubuntu status for this version of Ubuntu
 
 # ----------------- vvvv less frequently changed vvvv -------------------------------
 

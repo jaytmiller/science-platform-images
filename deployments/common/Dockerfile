@@ -76,7 +76,9 @@ RUN /opt/common-scripts/apt-install \
         sysstat \
         net-tools \
         rename \
-        stress-ng \
+        stress-ng
+
+RUN /opt/common-scripts/apt-install \
         libxcomposite1 \
         libxdamage1 \
         libgtk-3-0t64 \
@@ -102,10 +104,12 @@ RUN /opt/common-scripts/apt-install \
         graphviz \
         libopenblas-dev \
         zlib1g-dev \
-        git
+        git \
+        jq
 
-# Install Rust language
-RUN /opt/common-scripts/apt-install cargo rustc
+# Install Rust language;  0.5 - 1G of unrequested bloat
+# needed for tool compiles later,  download binaries instead
+# RUN /opt/common-scripts/apt-install cargo rustc
 
 # Libraries for FITS, DS9, ML
 RUN /opt/common-scripts/apt-install \
@@ -158,6 +162,8 @@ RUN cat /tmp/bash.bashrc >> /etc/bash.bashrc
 # For ENV_BASH definition for non-login shells
 COPY bash.env /etc/bash.env
 ENV BASH_ENV=/etc/bash.env
+
+COPY nb-wrangler.rc  /etc/nb-wrangler.rc
 
 # ----------------------------------------------------------------------
 # Set up astroquery and ds9 desktop short-cut, will be further

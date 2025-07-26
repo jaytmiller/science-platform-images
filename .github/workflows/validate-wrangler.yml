@@ -1,0 +1,159 @@
+name: Notebook Wrangler Validate Spec PR
+on:
+   pull_request_target:
+      branches:
+        - main
+      paths:
+        - "nbw-spec-archive/**"
+
+jobs:
+  docker:
+    name: Notebook Wrangler Ingest
+    runs-on: ubuntu-22.04
+    permissions:
+        packages: write
+        contents: write
+        pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Configure
+        shell: bash
+        run: |
+          git config --global user.email "dmd_octarine@stsci.edu"
+          git config --global user.name "Wrangler workflow"
+          scripts/image-configure wrangler --base-notebook minimal-notebook
+
+      - name: Set Up Environment
+        shell: bash
+        run: |
+          pip install -r requirements.txt
+          pip install git+https://github.com/spacetelescope/nb-wrangler.git
+          curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
+          chmod +x nb-wrangler
+          ./nb-wrangler bootstrap
+          cp nb-wrangler /tmp
+
+      - name: Debug branch and files
+        run: |
+          echo "Current branch: ${{ github.ref }}"
+          echo "PR'ed branch: ${{ github.event.pull_request.head.ref }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "PR number: ${{ github.event.number }}"
+          echo "HEAD commit: ${{ github.sha }}"
+
+          # Show all files in the repository
+          echo "All files in repo:"
+          find . -type f | sort | tail -20
+
+          # Show nbw-spec-archive directory contents
+          echo "Contents of nbw-spec-archive:"
+          if [ -d "nbw-spec-archive" ]; then
+            ls -la nbw-spec-archive/
+          else
+            echo "Directory nbw-spec-archive does not exist"
+          fi
+
+          # Show git status
+          git status
+
+          # Show recent commits
+          git log --oneline -5
+
+      # ========================= untrusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Check for YAML files in nbw-spec-archive
+        run: |
+          set -o pipefail
+          if [ -d "nbw-spec-archive" ]; then
+            echo "Found nbw-spec-archive directory"
+            echo "YAML files:"
+            find nbw-spec-archive/ -name "*.yaml" -type f | sort
+            echo "Total YAML files: $(find nbw-spec-archive/ -name "*.yaml" -type f | wc -l)"
+          else
+            echo "ERROR: nbw-spec-archive directory does not exist"
+            exit 1
+          fi
+
+      - name: Validate Repo Changes
+        shell: bash
+        run: |
+            # Change set can add one and only one spec
+            set -o pipefail
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nbw-.*\.yaml'; then
+                echo "PR change set includes more than a single wrangler spec, REJECTED."
+                false
+            fi
+
+      - name: Stash spec
+        run: |
+          set -x
+          set -o pipefail
+          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
+          cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
+
+      # ========================= trusted ==============================================
+
+      - name: Checkout main
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Validate Spec
+        shell: bash
+        run: |
+          set -o pipefail
+          cp /tmp/nbw-wrangler-spec.yaml .
+          cp /tmp/nb-wrangler .
+          source ./nb-wrangler environment
+          ./nb-wrangler nbw-wrangler-spec.yaml --validate --verbose
+
+      # ========================= untrusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      # ---- - name: Install Wrangler Spec in wrangler/environments dir
+      # ----   shell: bash
+      # ----   env:
+      # ----     GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+      # ----   run: |
+      # ----       set -x
+      # ----       set -o pipefail
+      # ----       NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nbw-wrangler-spec.yaml)
+      # ----       OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nbw-wrangler-spec.yaml)
+      # ----       if [[ "${NEW_SPEC_HASH}" != "${OLD_SPEC_HASH}" ]]; then
+      # ----           cp /tmp/nbw-wrangler-spec.yaml deployments/wrangler/environments
+      # ----           yq -r .out.mamba_spec deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.yml
+      # ----           yq -r .out.pip_compiler_output deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.txt
+      # ----           git add deployments/wrangler/environments/nbw-wrangler-spec.yaml \
+      # ----               deployments/wrangler/env-frozen/wrangler.yml \
+      # ----               deployments/wrangler/env-frozen/wrangler.txt
+      # ----           COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
+      # ----           git commit -m "${COMMIT_MSG}"
+      # ----           git push origin HEAD:${{ github.head_ref }}
+      # ----       fi
+
+      - name: Approve PR and Merge
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+            gh pr review --approve ${{ github.event.number }}
+            gh pr merge --admin --rebase --delete-branch ${{ github.event.number }}

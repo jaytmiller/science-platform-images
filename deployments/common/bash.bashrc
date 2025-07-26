@@ -17,3 +17,5 @@ export LD_LIBRARY_PATH=/usr/local/lib
 export BASH_ENV=/etc/bash.bashrc
 
 alias ls="ls --color=auto"
+
+source /etc/nb-wrangler.rc
