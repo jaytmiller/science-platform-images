@@ -31,7 +31,9 @@ export REGISTRY=""
 export OWNER=spacetelescope
 # export OWNER=spacetelescope
 
-export BASE_IMAGE=${OWNER}/minimal-notebook   # see above
+export BASE_NOTEBOOK=minimal-notebook
+
+export BASE_IMAGE=${OWNER}/${BASE_NOTEBOOK}
 
 export NOTEBOOK_TAG=latest
 export NOTEBOOK_ID=notebook-${DEPLOYMENT_NAME}:${NOTEBOOK_TAG}  # abstract name of mission-specific notebook image
