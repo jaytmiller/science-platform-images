@@ -35,11 +35,7 @@ if [[ $HUB_FLAG == "on-hub" ]]; then
     # /opt/common-scripts/kernel-setup
 fi
 
-# .............................................................................................
-# Remove VNC Desktop from Launcher
-# .............................................................................................
-# rm -rf $HOME/.user-dirs/Desktop
-# rm -rf $HOME/Desktop
+
 
 # .............................................................................................
 # Configure lightkurve and astropy cache locations for automatic clearing
