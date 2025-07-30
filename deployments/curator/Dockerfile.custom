@@ -3,16 +3,18 @@
 ARG BASE_IMAGE=notebook-common
 FROM $BASE_IMAGE AS build
 
-ARG NBC_ROOT="/opt/nb-curator"
+ARG NBC_ROOT="/opt/nbc-live"
 ENV NBC_ROOT="${NBC_ROOT}"
+
+ARG NBC_PANTRY="/teams/users/nbc-pantry"
+ENV NBC_PANTRY="${NBC_PANTRY}"
 
 # ----------------------------------------------------------------------
 # Install environments
 
 USER root
-RUN mkdir ${NBC_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBC_ROOT}
-
-USER ${NB_UID}:${NB_GID}
+RUN mkdir -p ${NBC_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBC_ROOT} && \
+    mkdir -p ${NBC_PANTRY} && chown -R ${NB_UID}:${NB_GID} ${NBC_PANTRY}
 
 # ----------------------------------------------------------------------
 # Add jupyter-lab-extensions to base environment as well as standard packages.
@@ -20,12 +22,17 @@ USER ${NB_UID}:${NB_GID}
 
 COPY --chown=${NB_UID}:${NB_GID} env-frozen/base/  /opt/env-frozen/base/
 COPY --chown=${NB_UID}:${NB_GID} environments/common-hints.* /opt/environments/
-RUN   /opt/common-scripts/install-common  base
+RUN   /opt/common-scripts/install-common  base && \
+      fix-permissions
+
+USER ${NB_UID}:${NB_GID}
 
 WORKDIR ${NBC_ROOT}
 RUN curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator && \
     chmod +x nb-curator && \
     ${NBC_ROOT}/nb-curator bootstrap && \
+    chmod -R g+w ${NBC_ROOT} && \
+    cp nb-curator /opt/tools && \
     rm -rf ${NBC_ROOT}/cache ${NBC_ROOT}/mm/pkgs
 
 # Suppress tensorflow warnings by default, ERROR and up only
