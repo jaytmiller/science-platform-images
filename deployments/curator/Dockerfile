@@ -28,12 +28,14 @@ RUN   /opt/common-scripts/install-common  base && \
 USER ${NB_UID}:${NB_GID}
 
 WORKDIR ${NBC_ROOT}
-RUN curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator && \
-    chmod +x nb-curator && \
-    ${NBC_ROOT}/nb-curator bootstrap && \
+
+RUN git clone https://github.com/spacetelescope/nb-curator && \
+    cd nb-curator && \
+    ./nb-curator bootstrap && \
     chmod -R g+w ${NBC_ROOT} && \
     cp nb-curator /opt/tools && \
-    rm -rf ${NBC_ROOT}/cache ${NBC_ROOT}/mm/pkgs
+    cd .. && \
+    rm -rf nb-curator ${NBC_ROOT}/cache ${NBC_ROOT}/mm/pkgs ${NBC_ROOT}/temps
 
 # Suppress tensorflow warnings by default, ERROR and up only
 ENV TF_CPP_MIN_LOG_LEVEL=2
