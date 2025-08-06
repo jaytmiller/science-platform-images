@@ -23,4 +23,7 @@ set -eu    # Either need -eu or have to combine failure statuses before exit
 
 # export NOTEBOOK_JOBS=1  to serialize notebook execution
 
-/opt/common-scripts/test-environments
+# /opt/common-scripts/test-environments
+
+/opt/tools/nb-curator /opt/environment/nb-curator-spec.yaml --test-imports --test-notebooks
+

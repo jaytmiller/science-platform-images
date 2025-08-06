@@ -35,8 +35,6 @@ if [[ $HUB_FLAG == "on-hub" ]]; then
     # /opt/common-scripts/kernel-setup
 fi
 
-
-
 # .............................................................................................
 # Configure lightkurve and astropy cache locations for automatic clearing
 # .............................................................................................
@@ -48,6 +46,11 @@ cd $HOME/.cache
 rm -f astropy lightkurve
 ln -s $HOME/.astropy/cache  astropy
 ln -s $HOME/.lightkurve/cache  lightkurve
+
+
+TC=$HOME/references/tike_content-ref
+/opt/common-scripts/git-sync-v4  https://github.com/spacetelescope/tike_content.git  main  ${TC}
+
 
 # make sure the script does not fail blocking spawn.
 exit 0
