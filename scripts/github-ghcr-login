@@ -1,0 +1,13 @@
+#! /bin/bash
+
+set -eu
+
+if [ $# -ne 1 ]; then
+    echo "usage: $0 <github-username>
+fi
+
+export USERNAME=${1}
+export GITHUB_TOKEN=${2:-$(cat ~/.ssh/github-token)}
+
+echo $GITHUB_TOKEN | docker login ghcr.io -u ${USERNAME} --password-stdin
+

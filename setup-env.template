@@ -1,8 +1,10 @@
-
+#! /bin/bash
 # Clone and customize this for your deployment
 #
 # NOTE:  must be sourced from jupyterhub-deploy root directory
 #
+
+# set -eu # DO NOT 'set -eu' since this script is sourced and will kill the sourcing terminal/shell on error.
 
 # ----------------- basic inputs,  must set for deployment --------------
 
@@ -21,7 +23,10 @@ export PLATFORM="linux/amd64"       # os / instruction-set for built image: linu
 
 # Set to "" (empty) for source build,  or quay.io/jupyter/ for current docker-stacks image.
 # jupyter is now at quay.io/jupyter/  needed to obtain fresh builds.  trailing backslash required
-export REGISTRY=""
+
+
+
+export REGISTRY=""   
 # export REGISTRY="quay.io/jupyter/"
 
 
@@ -37,6 +42,14 @@ export BASE_IMAGE=${OWNER}/${BASE_NOTEBOOK}
 
 export NOTEBOOK_TAG=latest
 export NOTEBOOK_ID=notebook-${DEPLOYMENT_NAME}:${NOTEBOOK_TAG}  # abstract name of mission-specific notebook image
+
+
+export DATE_TAG=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+export GITHUB_REGISTRY=ghcr.io
+export GITHUB_REPO=spacetelescope/science-platform-images
+export GITHUB_TAG=notebook-${DEPLOYMENT_NAME}-${DATE_TAG}
+export GITHUB_IMAGE_ID=${GITHUB_REGISTRY}/${GITHUB_REPO}:${GITHUB_TAG}
+
 
 export UBUNTU_TAG="24.04"            # # Image scanning,  report Ubuntu status for this version of Ubuntu
 

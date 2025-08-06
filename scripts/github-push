@@ -1,0 +1,8 @@
+#! /bin/bash
+
+set -e
+
+git tag $IMAGE_ID $GITHUB_IMAGE_ID
+
+git push $GITHUB_IMAGE_ID
+

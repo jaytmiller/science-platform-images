@@ -22,6 +22,7 @@ RUN mkdir -p ${NBC_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBC_ROOT} && \
 
 COPY --chown=${NB_UID}:${NB_GID} env-frozen/base/  /opt/env-frozen/base/
 COPY --chown=${NB_UID}:${NB_GID} environments/common-hints.* /opt/environments/
+
 RUN   /opt/common-scripts/install-common  base && \
       fix-permissions
 
