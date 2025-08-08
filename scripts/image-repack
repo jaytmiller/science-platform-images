@@ -1,0 +1,1086 @@
+#!/bin/bash
+
+set -eu
+
+# Define the original image name and tag
+IMAGE_NAME=${1:-${IMAGE_ID}}
+
+# Export the image from Docker daemon to a tar archive
+echo "Exporting $IMAGE_NAME from Docker daemon..."
+docker save "$IMAGE_NAME" -o "${IMAGE_NAME//:/_}.tar"
+
+# Convert the Docker image to OCI format using skopeo
+echo "Converting ${IMAGE_NAME//:/_}.tar to OCI format..."
+skopeo copy "docker-archive:${IMAGE_NAME//:/_}.tar" "oci:${IMAGE_NAME//:/_}-fat.oci.tar"
+
+# Repack and reduce the size of the image using docker-repack
+echo "Repacking and reducing size of ${IMAGE_NAME//:/_}:latest..."
+docker-repack --target-size 100MB "oci://`pwd`/${IMAGE_NAME//:/_}-fat.oci.tar" "oci://`pwd`/${IMAGE_NAME//:/_}-slim.oci.tar"
+
+# Convert the repacked OCI image back to Docker format
+echo "Converting ${IMAGE_NAME//:/_}-slim.oci.tar from OCI to Docker format..."
+skopeo copy "oci:${IMAGE_NAME//:/_}-slim.oci.tar" "docker-archive:${IMAGE_NAME//:/_}-slim.docker.tar"
+
+# Load the revised archive back into the Docker daemon with .slim suffix
+echo "Loading ${IMAGE_NAME//:/_}.slim.docker.tar into Docker daemon as $IMAGE_NAME.slim..."
+docker load -i "${IMAGE_NAME//:/_}-slim.docker.tar"
+
+# Cleanup (optional, be careful with this part)
+echo "Cleaning up temporary files..."
+rm -f "${IMAGE_NAME//:/_}.*.tar"
+
+exit 0
+
+
+#!/bin/bash
+
+# Check for required tools
+if ! command -v skopeo &> /dev/null || ! command -v docker-repack &> /dev/null || ! command -v docker &> /dev/null; then
+  echo "Error: Required tools (skopeo, docker-repack, docker) are missing!"
+  exit 1
+fi
+
+# Validate input
+if [ -z "$1" ]; then
+  echo "Usage: $0 <docker-image>"
+  exit 1
+fi
+
+IMAGE="$1"
+SLIM_IMAGE="${IMAGE}.slim"
+
+# Step 1: Export Docker image to OCI format
+echo "Exporting Docker image '$IMAGE' to OCI format..."
+mkdir -p oci-archive
+skopeo copy docker://$IMAGE dir://oci-archive
+
+# Step 2: Repack OCI archive using docker-repack
+echo "Repacking OCI archive to reduce size..."
+mkdir -p repacked-oci-archive
+docker-repack --target-level 1 -i oci-archive -o repacked-oci-archive
+
+# Step 3: Convert repacked OCI back to Docker format
+echo "Converting repacked OCI to Docker image..."
+skopeo copy dir://repacked-oci-archive docker://$SLIM_IMAGE
+
+# Step 4: Clean up temporary files
+echo "Cleaning up temporary files..."
+rm -rf oci-archive repacked-oci-archive
+
+echo "✅ Successfully slimmed image '$IMAGE' to '$SLIM_IMAGE'!"
+
+
+exit 0
+
+
+
+wget https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Linux-x86_64.tar.gz
+
+brew install skopeo # sudo apt-get install skopeo
+
+
+docker save notebook-curator:latest -o notebook-curator.tar
+
+skopeo
+
+
+1169  ./nb-curator tike-2025-07-beta.yaml --debug
+ 1170  ./nb-curator tike-2025-07-beta.yaml --compact --debug
+ 1171  black nb_curator/
+ 1172  make lint
+ 1173  pip install .[dev]
+ 1174  clear
+ 1175  ls
+ 1176  make lint
+ 1177  bandit
+ 1178  emacs pyproject.toml 
+ 1179  clear
+ 1180  git status
+ 1181  rm \#*
+ 1182  which pip
+ 1183  which black
+ 1184  make lint
+ 1185  which bandit
+ 1186  pip install bandit
+ 1187  make lint
+ 1188  less pyproject.toml 
+ 1189  emacs pyproject.toml 
+ 1190  git add pyproject.toml 
+ 1191  git status
+ 1192  git add nb_curator/
+ 1193  ls
+ 1194  git status
+ 1195  ./nb-curator tike-2025-07-beta.yaml --compact --delete-envc
+ 1196  ./nb-curator tike-2025-07-beta.yaml --compact --delete-env
+ 1197  ls ~/.nbc-live
+ 1198  ./nb-curator tike-2025-07-beta.yaml --compact --help
+ 1199  ./nb-curator tike-2025-07-beta.yaml --delete-env
+ 1200  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1201  ls ~/.nbc-live/mm/tess
+ 1202  ls ~/.nbc-live/mm/envs/tess
+ 1203  clear
+ 1204  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1205  git diff
+ 1206  ./nb-curator tike-2025-07-beta.yaml --reset-spec
+ 1207  git diff tike-2025-07-beta.yam
+ 1208  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1209  ./nb-curator tike-2025-07-beta.yaml --reset-spec
+ 1210  ./nb-curator tike-2025-07-beta.yaml --delete-env
+ 1211  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1212  ./nb-curator tike-2025-07-beta.yaml --curate -t
+ 1213  rm -rf references
+ 1214  ./nb-curator tike-2025-07-beta.yaml --clone
+ 1215  ./nb-curator tike-2025-07-beta.yaml --clone --test-notebooks
+ 1216  git diff upstream/main -- nb_curator/notebook_tester.py
+ 1217  ./nb-curator tike-2025-07-beta.yaml --clone --test-notebooks
+ 1218  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1219  git diff tike-2025-07-beta.yaml
+ 1220  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1221  git diff tike-2025-07-beta.yaml
+ 1222  ./nb-curator tike-2025-07-beta.yaml --reset-spec
+ 1223  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1224  git diff tike-2025-07-beta.yaml
+ 1225  git status
+ 1226  git add tike-2025-07-beta.yaml 
+ 1227  git add nb_curator/
+ 1228  git commit
+ 1229  git push jaytmiller main
+ 1230  git log
+ 1231  git push upstream main
+ 1232  clear
+ 1233  docker compose logs
+ 1234  cd prime-ai/prime-ai/
+ 1235  docker compose logs
+ 1236  ollama ps
+ 1237  clear
+ 1238  make functional
+ 1239  make fnc-test
+ 1240  ./nb-curator
+ 1241  ./nb-curator --help
+ 1242  git diff nb-curator
+ 1243  make functional
+ 1244  make functional-env-misc
+ 1245  make fnc-compile
+ 1246  make functional
+ 1247  git status
+ 1248  git diff nb_curator/
+ 1249  make lint
+ 1250  pip install .[dev]
+ 1251  clear
+ 1252  make lint
+ 1253  clear
+ 1254  ls
+ 1255  git status
+ 1256  git add Makefile nb-curator 
+ 1257  less tike-2025-07-beta.yaml 
+ 1258  git diff tike-2025-07-beta.yaml
+ 1259  git add tike-2025-07-beta.yaml 
+ 1260  git diff nb_curator/
+ 1261  make functional
+ 1262  git status
+ 1263  git add nb_curator/ tike-2025-07-beta.yaml 
+ 1264  git commit
+ 1265  git push upstream main
+ 1266  git push jaytmiller main
+ 1267  less pyproject.toml 
+ 1268  ls ~/.nbc-live/mm/envs/nbcurator/lib/python3.11/site-packages/
+ 1269  clear
+ 1270  git status
+ 1271  history
+ 1272  find ~/.nbc-live -name nb_curator
+ 1273  cd
+ 1274  mkdir nb-curator-work
+ 1275  rm -rf ~/.nbc-*
+ 1276  curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
+ 1277  chmod +x nb-curator
+ 1278  ./nb-curator bootstrap
+ 1279  source ./nb-curator environment
+ 1280  ls
+ 1281  cd nb-curator-work/
+ 1282  curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
+ 1283  chmod +x nb-curator
+ 1284  ./nb-curator bootstrap
+ 1285  source ./nb-curator environment
+ 1286  ls ~/.nbc-root
+ 1287  ls ~/.nbc-live
+ 1288  git status
+ 1289  cd
+ 1290  cd nb-curator
+ 1291  git status
+ 1292  ./nb-curator tike-2025-07-beta.yaml 
+ 1293  ./nb-curator tike-2025-07-beta.yaml --color=off
+ 1294  ./nb-curator tike-2025-07-beta.yaml --use-color=off
+ 1295  git status
+ 1296  ./nb-curator tike-2025-07-beta.yaml --use-color=off
+ 1297  ./nb-curator tike-2025-07-beta.yaml --color=off
+ 1298  ./nb-curator tike-2025-07-beta.yaml
+ 1299  grep VALID nb_curator/*
+ 1300  git status
+ 1301  git add nb_curator/
+ 1302  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1303  printenv | grep COLOR
+ 1304  git status
+ 1305  git commit
+ 1306  git push upstream main
+ 1307  git push jaytmiller main
+ 1308  ls
+ 1309  git diff
+ 1310  git add nb_curator/
+ 1311  git commit
+ 1312  git push upstream main
+ 1313  git push jmiller main
+ 1314  git push jaytmiller main
+ 1315  emacs nb_curator/constants.py 
+ 1316  git add nb_curator/
+ 1317  git commit
+ 1318  git push jaytmiller main
+ 1319  git push upstream main
+ 1320  ollama pull qwen-3-coder
+ 1321  ollama pull qwen3-coder
+ 1322  ollama pull qwen3-coder:30b
+ 1323  ckear
+ 1324  clear
+ 1325  ls
+ 1326  echo >.nb-curator-repo-id
+ 1327  git add .nb-curator-repo-id 
+ 1328  git add nb-curator 
+ 1329  clear
+ 1330  ls
+ 1331  ./nb-curator https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/tike-2025-07-beta.yaml --reinstall
+ 1332  ./nb-curator https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/tike-2025-07-beta.yaml --reinstall --debug
+ 1333  git diff
+ 1334  git status
+ 1335  git checkout -- nb_curator/logger.py
+ 1336  git diff nb_curator/
+ 1337  git commit
+ 1338  git push jaytmiller main
+ 1339  git push upstream main
+ 1340  git add nb_curator/
+ 1341  git commit
+ 1342  git add nb_curator/
+ 1343  git commit
+ 1344  git push jaytmiller main
+ 1345  git push upstream main
+ 1346  cd nb_curator/
+ 1347  grep zstd *
+ 1348  zstd
+ 1349  git diff
+ 1350  git add .
+ 1351  git commit
+ 1352  git push upstream main
+ 1353  git push jaytmillerm ain
+ 1354  git push jaytmiller main
+ 1355  cd ..
+ 1356  ./nb-curator tike-2025-07-beta.yaml --pack
+ 1357  ./nb-curator tike-2025-07-beta.yaml --unpack
+ 1358  ./nb-curator tike-2025-07-beta.yaml --pack
+ 1359  ./nb-curator tike-2025-07-beta.yaml --pack --debug
+ 1360  ./nb-curator tike-2025-07-beta.yaml --pack --verbose
+ 1361  cd ~/.nbc-live/mm/envs/
+ 1362  ls
+ 1363  ls -lt
+ 1364  cd tess
+ 1365  ls
+ 1366  du -hc
+ 1367  cd ..
+ 1368  ls
+ 1369  cd
+ 1370  git statius
+ 1371  git diff
+ 1372  cd nb-curator
+ 1373  git diff
+ 1374  git add nb_curator/
+ 1375  git commit
+ 1376  git push upstream main
+ 1377  git push jaytmiller main
+ 1378  clear
+ 1379  git fetch upstream
+ 1380  git fetch jaytmiller
+ 1381  git rebase upstream/main
+ 1382  git diff
+ 1383  git stash
+ 1384  git rebase upstream/main
+ 1385  git stash pop
+ 1386  git stash list
+ 1387  git stash drop
+ 1388  clear
+ 1389  ls
+ 1390  cd nb-curator
+ 1391  ls
+ 1392  cd
+ 1393  cd science-platform-images/
+ 1394  less deployments/curator/Dockerfile
+ 1395  less deployments/curator/Dockerfile.custom 
+ 1396  less deployments/common/Dockerfile.trailer 
+ 1397  less deployments/common/Dockerfile
+ 1398  cat deployments/common/Dockerfile
+ 1399  git status
+ 1400  git diff
+ 1401  git status
+ 1402  git add deployments/
+ 1403  git commit
+ 1404  docker image prune
+ 1405  image-build
+ 1406  source setup-env
+ 1407  image-build
+ 1408  ollama --help
+ 1409  which ollama
+ 1410  less `which ollama`
+ 1411  ollama run --help
+ 1412  ollama show qwen3-coder:30b
+ 1413  ollama ps
+ 1414  wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+ 1415  rm ~/Downloads/Miniforge3-Linux-x86_64.sh 
+ 1416  bash Miniforge3-Linux-x86_64.sh 
+ 1417  rm -rf Miniforge3-Linux-x86_64.sh 
+ 1418  bash Miniforge3-Linux-x86_64.sh 
+ 1419  wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+ 1420  rm -rf miniforge3/
+ 1421  emacs .bashrc
+ 1422  wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+ 1423  clear
+ 1424  ls
+ 1425  bash Miniforge3-Linux-x86_64.sh
+ 1426  mamba search python
+ 1427  mamba install python
+ 1428  python
+ 1429  which python
+ 1430  conda env list
+ 1431  clear
+ 1432  cd nb-curator
+ 1433  emacs tike-2025-07-beta.yaml 
+ 1434  git checkout -- tike-2025-07-beta.yaml
+ 1435  git status
+ 1436  git diff
+ 1437  ls
+ 1438  git add nb_curator/
+ 1439  git commit
+ 1440  clear
+ 1441  cat tike-2025-07-beta.yaml 
+ 1442  ./nb-curator 
+ 1443  rm -rf ~/.nbc-*
+ 1444  ./nb-curator bootstrap
+ 1445  source ./nb-curator activate
+ 1446  ./nb-curator tike-2025-07-beta.yaml --curate --profile --verbose
+ 1447  emacs tike-2025-07-beta.yaml 
+ 1448  sudo apt-get update && sudo apt-get install black flake8 mypy
+ 1449  clear
+ 1450  black nb_curator/
+ 1451  cd
+ 1452  cd science-platform-images/
+ 1453  ls
+ 1454  source setup-env
+ 1455  where
+ 1456  git fetch jaytmiller
+ 1457  git status
+ 1458  image-configure curator
+ 1459  git checkout curator
+ 1460  image-configure curator
+ 1461  git status
+ 1462  git branch -a
+ 1463  gitl og
+ 1464  git log
+ 1465  git checkout main
+ 1466  git branch -d curator
+ 1467  git checkout jaytmiller/curator
+ 1468  git checkout -b curator
+ 1469  image-configure curator
+ 1470  source setup-env
+ 1471  where
+ 1472  image-build
+ 1473  image-sh
+ 1474  run-lab
+ 1475  emacs deployments/curator/Dockerfile.custom 
+ 1476  make test
+ 1477  image-build
+ 1478  emacs deployments/curator/Dockerfile.custom 
+ 1479  image-build
+ 1480  run-lab
+ 1481  image-build
+ 1482  run-lab
+ 1483  clear
+ 1484  docker image ls
+ 1485  image-build
+ 1486  emacs deployments/curator/Dockerfile.custom 
+ 1487  image-build
+ 1488  run-lab
+ 1489  image-build
+ 1490  emacs deployments/curator/Dockerfile.custom 
+ 1491  image-build
+ 1492  where
+ 1493  emacs deployments/curator/Dockerfile.custom 
+ 1494  docker image ls
+ 1495  docker rm ffea8f5dc8f4
+ 1496  docker rmi ffea8f5dc8f4
+ 1497  image-build
+ 1498  run-lab
+ 1499  docker image ls
+ 1500  docker image rm ffea8f5dc8f4
+ 1501  docker image ls
+ 1502  image-build
+ 1503  emacs deployments/curator/Dockerfile.custom 
+ 1504  image-update
+ 1505  image-build
+ 1506  less deployments/curator/Dockerfile
+ 1507  image-build
+ 1508  emacs deployments/curator/Dockerfile.custom 
+ 1509  emacs infrequent-env 
+ 1510  emacs deployments/curator/Dockerfile.custom 
+ 1511  ls
+ 1512  cd ..
+ 1513  cd nb-curator
+ 1514  emacs tike-2025-07-beta.yaml 
+ 1515  fg
+ 1516  ./nb-curator tike-2025-07-beta.yaml --compile
+ 1517  git diff
+ 1518  ./nb-curator tike-2025-07-beta.yaml --compile
+ 1519  git diff
+ 1520  less tike-2025-07-beta.yaml 
+ 1521  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1522  less tike-2025-07-beta.yaml 
+ 1523  git status
+ 1524  git diff
+ 1525  git status
+ 1526  git diff nb_curator/
+ 1527  git checkout -- nb_curator/curator.py
+ 1528  git status
+ 1529  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1530  git diff nb_curator/
+ 1531  git add nb_curator/
+ 1532  git add tike-2025-07-beta.yaml 
+ 1533  git commit
+ 1534  git push upstream main
+ 1535  git push jaytmiller main
+ 1536  clear
+ 1537  git status
+ 1538  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1539  ls
+ 1540  ./nb-curator tike-2025-07-beta.yaml --curate --debug
+ 1541  ls
+ 1542  git diff
+ 1543  ./nb-curator tike-2025-07-beta.yaml --curate --debug
+ 1544  clear
+ 1545  ./nb-curator tike-2025-07-beta.yaml --curate --debug
+ 1546  clear
+ 1547  ./nb-curator tike-2025-07-beta.yaml --curate --debug
+ 1548  ollama show gemma3
+ 1549  ollama show ph4
+ 1550  ollama show phi4
+ 1551  ollama show gemma3:7b
+ 1552  ollama show gemma3:8b
+ 1553  ollama show gemma3:14b
+ 1554  ollama list | osrt
+ 1555  ollama list | osrtrest
+ 1556  reset
+ 1557  stty sane
+ 1558  clear
+ 1559  ollama list
+ 1560  ollama list | sort
+ 1561  ollama show phi4-reasoning:14b
+ 1562  ollama show qwen3:8b
+ 1563  emacs ~/.ssh/blackbox.packages
+ 1564  cd science-platform-images/
+ 1565  ls
+ 1566  git status
+ 1567  git fetch upstream
+ 1568  git fetch jaytmiller
+ 1569  git status
+ 1570  ls scripts
+ 1571  cd ..
+ 1572  cd science-platform-images/
+ 1573  less setup-env
+ 1574  clear
+ 1575  ls
+ 1576  less setup-env
+ 1577  find . -type f | xargs grep REGISTRY
+ 1578  less deployments/common/Dockerfile
+ 1579  emacs ~/.ssh/blackbox.packages 
+ 1580  source ~/.ssh/blackbox.packages
+ 1581  echo $CR_PAT | docker login ghcr.io -u jaytmiller --password-stdin
+ 1582  cat /home/ai/.docker/config.json
+ 1583  ls -l /home/ai/.docker/config.json
+ 1584  ls
+ 1585  emacs setup-env.template 
+ 1586  image-configure curator
+ 1587  ./image-configure curator
+ 1588  scripts/image-configure curator
+ 1589  source setup-env
+ 1590  printenv GITHUB_IMAGE_ID
+ 1591  emacs setup-env.template 
+ 1592  scripts/image-configure curator
+ 1593  printenv GITHUB_IMAGE_ID
+ 1594  source setup-env
+ 1595  printenv GITHUB_IMAGE_ID
+ 1596  emacs setup-env.template 
+ 1597  source setup-env
+ 1598  image-configure curator
+ 1599  source setup-env
+ 1600  clear
+ 1601  ls
+ 1602  git status
+ 1603  git add scripts
+ 1604  source $(image-configure curator)
+ 1605  emacs setup-env.template 
+ 1606  source $(image-configure curator)
+ 1607  image-configure curator
+ 1608  emacs infrequent-env 
+ 1609  emacs setup-env.template 
+ 1610  emacs .github/workflows/
+ 1611  ls
+ 1612  cd .github/workflows/
+ 1613  ls
+ 1614  printenv | less
+ 1615  emacs setup-env.template 
+ 1616  cd ../..
+ 1617  emacs setup-env.template 
+ 1618  image-configure curator
+ 1619  source setup-env
+ 1620  clear
+ 1621  docker image ls
+ 1622  docker history -o wide
+ 1623  cd science-platform-images/
+ 1624  source setup-env
+ 1625  cd science-platform-images/
+ 1626  source setup-env
+ 1627  ls
+ 1628  github-login
+ 1629  cd science-platform-images/
+ 1630  source setup-env
+ 1631  ls
+ 1632  github-login
+ 1633  emacs setup-env
+ 1634  cd science-platform-images/
+ 1635  emacs setup-env.template 
+ 1636  image-configure curator
+ 1637  scripts/image-configure curator
+ 1638  source setup-env
+ 1639  github-login
+ 1640  chmod +x scripts/github*
+ 1641  git add scripts
+ 1642  github-login
+ 1643  cd
+ 1644  cd .ssh
+ 1645  ls
+ 1646  mv blackbox.packages github-token
+ 1647  chmod 600 github-token 
+ 1648  cd
+ 1649  cd science-platform-images/
+ 1650  github-login
+ 1651  emacs scripts/github-login 
+ 1652  github-login
+ 1653  github-login jaytmiller
+ 1654  emacs scripts/github-login 
+ 1655  github-login jaytmiller
+ 1656  emacs scripts/github-login 
+ 1657  emacs ~/.ssh/github-token 
+ 1658  emacs scripts/github-login 
+ 1659  github-login jaytmiller
+ 1660  emacs scripts/github-login 
+ 1661  git add scripts
+ 1662  git mv scripts/github-login scripts/github-ghcr-login 
+ 1663  clear
+ 1664  image-build
+ 1665  emacs deployments/common/Dockerfile.cache 
+ 1666  docker image ls
+ 1667  emacs deployments/common/Dockerfile.cache 
+ 1668  image-build
+ 1669  git diff
+ 1670  emacs deployments/curator/Dockerfile.custom 
+ 1671  docker image ls
+ 1672  docker rmi notebook-curator
+ 1673  docker image prune
+ 1674  docker system prune
+ 1675  docker image ls
+ 1676  image-build
+ 1677  image-sh
+ 1678  clear
+ 1679  ls
+ 1680  cd deployments/
+ 1681  ls
+ 1682  cd curator/
+ 1683  ls
+ 1684  cd environments/
+ 1685  ls
+ 1686  cd ..
+ 1687  ls
+ 1688  emacs Dockerfile.custom 
+ 1689  cd environments/
+ 1690  ls
+ 1691  emacs post-start-hook 
+ 1692  git status
+ 1693  cd ../..
+ 1694  cd ..
+ 1695  ls
+ 1696  git status
+ 1697  git add .
+ 1698  git status
+ 1699  git commit
+ 1700  git push upstream main
+ 1701  git push jaytmiller main
+ 1702  git diff
+ 1703  git add nb_curator/
+ 1704  make functional
+ 1705  ./nb-curator tike-2025-07-beta.yaml -t --verbose
+ 1706  ./nb-curator tike-2025-07-beta.yaml --reinstall -t --verbose
+ 1707  git status
+ 1708  git diff nb_curator/
+ 1709  git add nb_curator/
+ 1710  git commit
+ 1711  make fnc-reinstall
+ 1712  make fnc-pack
+ 1713  make fnc-env-pack
+ 1714  make fnc-misc
+ 1715  make functional-misc
+ 1716  cd nb_curator/
+ 1717  grep ENV_CAN_SUFFIX *
+ 1718  python
+ 1719  grep ENV_CAN_SUFFIX *
+ 1720  rm -rf __pycache__/
+ 1721  cd ..
+ 1722  make lint
+ 1723  black nb_curator/
+ 1724  make lint
+ 1725  black nb_curator/
+ 1726  make lint
+ 1727  clear
+ 1728  make functional
+ 1729  ./nb-curator tike-2025-07-beta.yaml --reset-spec
+ 1730  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1731  ./nb-curator tike-2025-07-beta.yaml --curate --debug
+ 1732  ./nb-curator tike-2025-07-beta.yaml --curate
+ 1733  ./nb-curator tike-2025-07-beta.yaml --curate --debug
+ 1734  less tike-2025-07-beta.yaml 
+ 1735  clear
+ 1736  black nb_curator/
+ 1737  make lint
+ 1738  clear
+ 1739  git add nb_curator/
+ 1740  git status
+ 1741  make functonal
+ 1742  make functional
+ 1743  cd ~/.nbc-live/
+ 1744  ls
+ 1745  cd .././nbc-p
+ 1746  cd ../.nbc-pantry/
+ 1747  ls
+ 1748  cd envs/
+ 1749  ls
+ 1750  ls -lt
+ 1751  ls -lht
+ 1752  tar tf tess.tar.xz 
+ 1753  cd -
+ 1754  cd
+ 1755  cd nb-curator
+ 1756  ./nb-curator --pack-env tike-2025-07-beta.yaml --archive-format .tar
+ 1757  make functional
+ 1758  ./nb-curator --pack-env tike-2025-07-beta.yaml --archive-format .tar
+ 1759  ./nb-curator --pack-env tike-2025-07-beta.yaml --archive-format .tar --debug
+ 1760  ./nb-curator --pack-env tike-2025-07-beta.yaml --archive-format .tar --verbose
+ 1761  ./nb-curator --pack-env tike-2025-07-beta.yaml --reinstall --archive-format .tar --verbose
+ 1762  ./nb-curator --pack-env tike-2025-07-beta.yaml --pack --archive-format .tar --verbose
+ 1763  ./nb-curator --pack-env tike-2025-07-beta.yaml --unpack --archive-format .tar --verbose
+ 1764  ./nb-curator --pack-env tike-2025-07-beta.yaml --pack --archive-format .tar.xst --verbose
+ 1765  ./nb-curator --pack-env tike-2025-07-beta.yaml --unpack --archive-format .tar.xst --verbose
+ 1766  ./nb-curator --pack-env tike-2025-07-beta.yaml --archive-format .tar.xst --verbose
+ 1767  ls -lt /home/ai/.nbc-pantry/envs/tess.tar
+ 1768  ./nb-curator tike-2025-07-beta.yaml --archive-format .tar.xst --verbose --pack-env
+ 1769  less tike-2025-07-beta.yaml 
+ 1770  emac tike-2025-07-beta.yaml 
+ 1771  emacs tike-2025-07-beta.yaml 
+ 1772  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env
+ 1773  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --archive-format
+ 1774  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --archive-format --help
+ 1775  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --help
+ 1776  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --archive-format .tar.gz
+ 1777  make lint
+ 1778  black nb_curator/
+ 1779  make lint
+ 1780  git status
+ 1781  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --archive-format .tar.gz
+ 1782  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --archive-format .tar.bz2
+ 1783  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --archive-format .tar
+ 1784  ./nb-curator tike-2025-07-beta.yaml --verbose --pack-env --archive-format .tar.xst
+ 1785  ls -lt /home/ai/.nbc-pantry/envs/tess.tar.xst
+ 1786  zstd --help
+ 1787  emacs tike-2025-07-beta.yaml 
+ 1788  git status
+ 1789  git add tike-2025-07-beta.yaml 
+ 1790  git add nb_curator/
+ 1791  make lint
+ 1792  black nb_curator/
+ 1793  make lint
+ 1794  git add nb_curator/
+ 1795  git status
+ 1796  git commit
+ 1797  git log 
+ 1798  git diff  babbc06583e978e0a1862af850927ad0ef3bff4a
+ 1799  git commit --amend
+ 1800  emacs tike-2025-07-beta.yaml 
+ 1801  cd references/tike_content/
+ 1802  ls
+ 1803  cd content/
+ 1804  ls
+ 1805  cd notebooks/
+ 1806  ls
+ 1807  cd ../../..
+ 1808  cd ..
+ 1809  emacs tike-2025-07-beta.yaml 
+ 1810  ./nb-curator --curate tike-2025-07-beta.yaml 
+ 1811  emacs tike-2025-07-beta.yaml 
+ 1812  ./nb-curator --curate tike-2025-07-beta.yaml 
+ 1813  emacs tike-2025-07-beta.yaml 
+ 1814  ./nb-curator --curate tike-2025-07-beta.yaml 
+ 1815  cd references/tike_content/
+ 1816  ls
+ 1817  find content -name requirements.txt
+ 1818  cd ../..
+ 1819  git checkout -- tike-2025-07-beta.yaml
+ 1820  git statatus
+ 1821  git status
+ 1822  git push upstream main'
+ 1823  git push upstream main
+ 1824  git push jaytmiller main
+ 1825  git status
+ 1826  make fnc-env-register
+ 1827  make fnc-register-env
+ 1828  git checkout -- tike-2025-07-beta.yaml --register-env --verbose
+ 1829  ./nb-curator tike-2025-07-beta.yaml --register-env --verbose
+ 1830  ./nb-curator tike-2025-07-beta.yaml --register-env 
+ 1831  ./nb-curator tike-2025-07-beta.yaml --register-env --debug
+ 1832  cp nb-curator ~/bin
+ 1833  which nb-curator 
+ 1834  git status
+ 1835  git diff
+ 1836  ./nb-curator tike-2025-07-beta.yaml --register-env --verbose
+ 1837  ./nb-curator tike-2025-07-beta.yaml --unregister-env --verbose
+ 1838  ./nb-curator tike-2025-07-beta.yaml --register-env --verbose
+ 1839  ./nb-curator tike-2025-07-beta.yaml --unregister-env --verbose
+ 1840  ./nb-curator tike-2025-07-beta.yaml --unregister-env
+ 1841  make lint
+ 1842  black nb_curator/
+ 1843  make lint
+ 1844  git add nb_curator/
+ 1845  git status
+ 1846  git add Makefile
+ 1847  git commit
+ 1848  git push origin main
+ 1849  git push upstream main
+ 1850  git push jaytmiller main
+ 1851  ls
+ 1852  emacs tike-2025-07-beta.yaml 
+ 1853  prime
+ 1854  git status
+ 1855  git diff
+ 1856  ls
+ 1857  cd workflows
+ 1858  ls
+ 1859  emacs Makefile
+ 1860  less original-curator.md
+ 1861  ls
+ 1862  less original-curator.out.md 
+ 1863  less original-curator.wf
+ 1864  ls
+ 1865  less wf-diagramming.md 
+ 1866  less llm-mermaid.md 
+ 1867  ls
+ 1868  less original-curator.in
+ 1869  less original-curator.md 
+ 1870  ls
+ 1871  less original-curator.out.md 
+ 1872  less wf-diagramming.md 
+ 1873  less llm-mermaid.md 
+ 1874  ollama run --help
+ 1875  git status
+ 1876  git diff
+ 1877  make lint
+ 1878  cd. .
+ 1879  cd ..
+ 1880  make lint
+ 1881  black nb_curator/
+ 1882  make lint
+ 1883  git add nb_curator/
+ 1884  git status
+ 1885  git diff workflows/classic.wf
+ 1886  git add workflows/classic.wf 
+ 1887  git commit
+ 1888  git push upstream main
+ 1889  git push jaytmiller main
+ 1890  mermaid
+ 1891  npm install -g mermaid
+ 1892  mermaid
+ 1893  mermaid-cli
+ 1894  npm search mermaid
+ 1895  make lint
+ 1896  git diff
+ 1897  make lint
+ 1898  git add nb_curator/
+ 1899  git commit
+ 1900  git push upstream main
+ 1901  git push jaytmiller main
+ 1902  cd science-platform-images/
+ 1903  ls
+ 1904  less README.md 
+ 1905  git status
+ 1906  cd .github
+ 1907  ls
+ 1908  emacs CODEOWNERS
+ 1909  cat CODEOWNERS 
+ 1910  git add CODEOWNERS 
+ 1911  cd ..
+ 1912  mkdir .spec-ingest
+ 1913  gh
+ 1914  gh pr --help
+ 1915  gh pr create --help
+ 1916  cd .github/workflows/
+ 1917  ls
+ 1918  less quality.yml 
+ 1919  less build-frozen.yml 
+ 1920  less build-floating.yml 
+ 1921  cp build-floating.yml build-spec.yml
+ 1922  emacs build-spec.yml 
+ 1923  gh --help
+ 1924  cd ../..
+ 1925  ls
+ 1926  git status
+ 1927  git fetch jaytmiller
+ 1928  git log
+ 1929  ls
+ 1930  less setup-env.template 
+ 1931  jq
+ 1932  pip install jq
+ 1933  which jq
+ 1934  git status
+ 1935  cd .github/workflows/
+ 1936  ls
+ 1937  git mv build-spec.yml build-curator-spec.yml
+ 1938  mv build-spec.yml build-curator-spec.yml
+ 1939  ollama list
+ 1940  curl http://localhost:11434/api/tags
+ 1941  curl http://localhost:11434/api/models
+ 1942  curl http://localhost:11434/api/list
+ 1943  git add .
+ 1944  git commit
+ 1945  emacs app.py
+ 1946  python app.py 
+ 1947  mkdir korg
+ 1948  cd korg
+ 1949  emacs mvp.py
+ 1950  python mvp.py 
+ 1951  pip install flask jsonify request
+ 1952  pip install flask jsonify requests
+ 1953  python mvp.py 
+ 1954  pip install jinga2
+ 1955  pip install jinja2
+ 1956  emacs requirementst.txt
+ 1957  cat requirementst.txt 
+ 1958  mv requirementst.txt requirements.txt
+ 1959  pip install -r requirements.txt 
+ 1960  python mvp.py 
+ 1961  mkdir templates
+ 1962  cd templates
+ 1963  emacs base.html
+ 1964  emacs chat.html
+ 1965  python mvp.py 
+ 1966  cd ..
+ 1967  python mvp.py 
+ 1968  ls
+ 1969  cd templates
+ 1970  ls
+ 1971  cd ..
+ 1972  ls
+ 1973  emacs app.py
+ 1974  python app.py
+ 1975  pip install flask httpx
+ 1976  git status
+ 1977  ls
+ 1978  git init
+ 1979  git add .
+ 1980  git commit
+ 1981  emacs app.py
+ 1982  python app.py
+ 1983  git add app.py 
+ 1984  git commit
+ 1985  emacs app.py 
+ 1986  python app.py
+ 1987  git add app.py 
+ 1988  git commit
+ 1989  emacs app.py
+ 1990  python app.py
+ 1991  emacs app.py 
+ 1992  python app.py
+ 1993  emacs app.py 
+ 1994  python app.py
+ 1995  emacs app.py 
+ 1996  git status
+ 1997  git add app.py
+ 1998  git commit
+ 1999  prime
+ 2000  gh --help
+ 2001  which gh
+ 2002  cd korg
+ 2003  ls
+ 2004  git status
+ 2005  python app.py 
+ 2006  pip show astropu
+ 2007  pip show astropy
+ 2008  pip show pip
+ 2009  pip show uv
+ 2010  pip show uv -v
+ 2011  pip show -v pytest
+ 2012  cd
+ 2013  cd science-platform-images/
+ 2014  ls
+ 2015  git status
+ 2016  git diff
+ 2017  emacs .github/CODEOWNERS 
+ 2018  git status
+ 2019  emacs .github/workflows/build-curator-spec.yml 
+ 2020  emacs setup-env
+ 2021  docker image ls
+ 2022  emacs scripts/image-configure 
+ 2023  emacs .github/workflows/build-curator-spec.yml 
+ 2024  git diff 
+ 2025  git add .github/
+ 2026  image-configure curator --base-notebook minimal-notebook
+ 2027  scripts/image-configure curator --base-notebook minimal-notebook
+ 2028  source setup-env
+ 2029  image-build
+ 2030  docker image ls
+ 2031  sudo apt-get update && sudo apt-get install podman buildah podman-compose
+ 2032  sudo apt-get update && sudo apt-get install podman buildah podman-compose containers-storage docker-compose
+ 2033  podman --help
+ 2034  cd
+ 2035  cd prime-ai/prime-ai/
+ 2036  ls
+ 2037  cat prime-pull 
+ 2038  emacs prime-pull 
+ 2039  ./prime-pull 
+ 2040  podman list
+ 2041  podman ls
+ 2042  podman --help
+ 2043  podman images
+ 2044  podman images --help
+ 2045  podman images -a
+ 2046  docker image ls
+ 2047  docker system prune -af
+ 2048  docker image ls
+ 2049  ls
+ 2050  emacs prime-up 
+ 2051  ollama list
+ 2052  /usr/local//bin/ollama image ls
+ 2053  /usr/local/bin/ollama ls
+ 2054  emacs ~/bin/ollama
+ 2055  ollama ls
+ 2056  clear
+ 2057  ls
+ 2058  git status
+ 2059  emacs prime-down 
+ 2060  emacs prime-up 
+ 2061  ls
+ 2062  emacs ollama
+ 2063  cat ~/bin/ollama
+ 2064  emacs ollama
+ 2065  cp ollama ~
+ 2066  ollama
+ 2067  ollama ls
+ 2068  clear
+ 2069  ls
+ 2070  git status
+ 2071  cd
+ 2072  clear
+ 2073  ls
+ 2074  rm *~
+ 2075  ls
+ 2076  cd science-platform-images/
+ 2077  git status
+ 2078  git diff
+ 2079  cd deployments/curator/
+ 2080  ls
+ 2081  cd environments/
+ 2082  ls
+ 2083  cd ..
+ 2084  emacs Dockerfile.custom 
+ 2085  cd ../..
+ 2086  source setup-env
+ 2087  git status
+ 2088  git diff setup-env
+ 2089  image-configure --base minimal-notebook curator
+ 2090  source setup-env
+ 2091  git status
+ 2092  git add .
+ 2093  image-build
+ 2094  docker image ls
+ 2095  image-sh
+ 2096  emacs scripts/
+ 2097  printenv OWNER
+ 2098  docker image ls
+ 2099  emacs scripts/
+ 2100  printenv BASE_IMAGE
+ 2101  emacs deployments/common/Dockerfile
+ 2102  emacs scripts/image-build
+ 2103  docker build --hepl
+ 2104  docker build --help
+ 2105  emacs deployments/common/Dockerfile
+ 2106  docker image ls
+ 2107  docker history notebook-curator -o wide
+ 2108  docker history -o wide notebook-curator 
+ 2109  docker history --wide notebook-curator 
+ 2110  docker history --help
+ 2111  docker history -H
+ 2112  docker history -H notebook-curator
+ 2113  docker history --format wide -H notebook-curator 
+ 2114  docker history -H notebook-curator 
+ 2115  docker help
+ 2116  uv pip install docker-repack
+ 2117  https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Darwin-x86_64.tar.gz
+ 2118  wget https://github.com/orf/docker-repack/releases/download/latest/docker-repack-Darwin-x86_64.tar.gz
+ 2119  wget https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Darwin-x86_64.tar.gz
+ 2120  rm docker-repack-Darwin-x86_64.tar.gz 
+ 2121  wget https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Linux-x86_64.tar.gz
+ 2122  tar zxf docker-repack-Linux-x86_64.tar.gz 
+ 2123  ./docker-repack 
+ 2124  ./docker-repack --help
+ 2125  podman image ls
+ 2126  docker image ls
+ 2127  ./docker-repack notebook-curator:latest notebook-curator.packed --target-size 1 --platform 'linux/*' --compression-level 3
+ 2128  ./docker-repack notebook-curator:latest ./notebook-curator.packed --target-size 1 --platform 'linux/*' --compression-level 3
+ 2129  ./docker-repack notebook-curator:latest `pwd`/notebook-curator.packed --target-size 1 --platform 'linux/*' --compression-level 3
+ 2130  ./docker-repack notebook-curator:latest oci://./notebook-curator.packed --target-size 1 --platform 'linux/*' --compression-level 3
+ 2131  ./docker-repack oci://./notebook-curator:latest oci://./notebook-curator.packed --target-size 1 --platform 'linux/*' --compression-level 3
+ 2132  ./docker-repack oci://notebook-curator:latest oci://./notebook-curator.packed --target-size 1 --platform 'linux/*' --compression-level 3
+ 2133  docker image save notbook-curator:latest -o notebook-curator.fat.tar
+ 2134  docker image save notebook-curator:latest -o notebook-curator.fat.tar
+ 2135  ./docker-repack notebook-curator.fat.tar notebook-curator.slim.tar --target-size 1 --platform 'linux/*' --compression-level 3
+ 2136  ./docker-repack notebook-curator.fat.tar -o notebook-curator.slim.tar --target-size 1 --platform 'linux/*' --compression-level 3
+ 2137  ./docker-repack notebook-curator.fat.tar oci://notebook-curator.slim.tar --target-size 1 --platform 'linux/*' --compression-level 3
+ 2138  ./docker-repack oci://notebook-curator.fat.tar oci://notebook-curator.slim.tar --target-size 1 --platform 'linux/*' --compression-level 3
+ 2139* ./docker-repack oci://./notebook-curator.fat.tar . --target-size 1 --platform 'linux/*' --compression-level 3
+ 2140  history | grep save
+ 2141  ./docker-repack notebook-curator.fat.tar notebook-curator.slim.tar --target-size 1 --compression-level 3
+ 2142* ./docker-repack notebook-curator.fat.tar .
+ 2143  ./docker-repack --target-size 1 --platform 'linux/*' --compression-level 3  notebook-curator.fat.tar notebook-curator.slim.tar 
+ 2144  ./docker-repack notebook-curator.fat.tar .
+ 2145  ./docker-repack notebook-curator.fat.tar . --help
+ 2146  ./docker-repack oci://notebook-curator.fat.tar oci://. 
+ 2147  ./docker-repack target-size 1 oci://notebook-curator.fat.tar oci://. 
+ 2148  ls -lt notebook-curator.fat.tar 
+ 2149  ./docker-repack target-size 1 oci://./notebook-curator.fat.tar oci://. 
+ 2150  ./docker-repack target-size 1 oci://./notebook-curator.fat.tar 
+ 2151  ./docker-repack target-size 1 oci://notebook-curator.fat.tar 
+ 2152  ./docker-repack --target-size 1 oci://notebook-curator.fat.tar oc://.
+ 2153  ./docker-repack --target-size 1 oci://notebook-curator.fat.tar oci://.
+ 2154  tar tf notebook-curator.fat.tar 
+ 2155  time docker image save notebook-curator:latest -o notebook-curator.fat.tar
+ 2156  ./docker-repack --target-size 1 oci://notebook-curator.fat.tar oci://.
+ 2157  ./docker-repack --target-size 1 notebook-curator.fat.tar oci://notebook-curator.slim
+ 2158  ./docker-repack --target-size 1 ./notebook-curator.fat.tar oci://notebook-curator.slim
+ 2159  skopeo
+ 2160  sudo apt install skopeo
+ 2161  skopeo copy docker-archive:notebook-curator.fat.tar oci:notebook-curator-oci
+ 2162  ./docker-repack --target-size 1 oci:notebook-curator-oci oci://notebook-curator.slim
+ 2163  ./docker-repack --target-size 1 oci://notebook-curator-oci oci://notebook-curator.slim
+ 2164  ls -lt notebook-curator*
+ 2165  ls -ldt notebook-curator*
+ 2166  tar cf notebook-curator-oci.tar notebook-curator-oci
+ 2167  ls -ldt notebook-curator*
+ 2168  history >scripts/image-repack

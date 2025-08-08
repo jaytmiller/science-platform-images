@@ -38,6 +38,10 @@ RUN git clone https://github.com/spacetelescope/nb-curator && \
     cd .. && \
     rm -rf nb-curator ${NBC_ROOT}/cache ${NBC_ROOT}/mm/pkgs ${NBC_ROOT}/temps
 
+
+# RUN source /opt/tools/nb-curator environment && \
+#    nb-curator --reinstall -t --compact /opt/environments/nb-curator-spec.yaml    
+
 # Suppress tensorflow warnings by default, ERROR and up only
 ENV TF_CPP_MIN_LOG_LEVEL=2
 
