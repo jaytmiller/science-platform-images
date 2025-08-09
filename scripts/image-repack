@@ -2,6 +2,12 @@
 
 set -eu
 
+# Check for required tools
+if ! command -v skopeo &> /dev/null || ! command -v docker-repack &> /dev/null || ! command -v docker &> /dev/null; then
+  echo "Error: Required tools (skopeo, docker-repack, docker) are missing!"
+  exit 1
+fi
+
 # Define the original image name and tag
 IMAGE_NAME=${1:-${IMAGE_ID}}
 
@@ -15,30 +21,26 @@ skopeo copy "docker-archive:${IMAGE_NAME//:/_}.tar" "oci:${IMAGE_NAME//:/_}-fat.
 
 # Repack and reduce the size of the image using docker-repack
 echo "Repacking and reducing size of ${IMAGE_NAME//:/_}:latest..."
-docker-repack --target-size 100MB "oci://`pwd`/${IMAGE_NAME//:/_}-fat.oci.tar" "oci://`pwd`/${IMAGE_NAME//:/_}-slim.oci.tar"
+docker-repack --target-size 50MB "oci://`pwd`/${IMAGE_NAME//:/_}-fat.oci.tar" "oci://`pwd`/${IMAGE_NAME//:/_}-slim.oci.tar"
 
 # Convert the repacked OCI image back to Docker format
 echo "Converting ${IMAGE_NAME//:/_}-slim.oci.tar from OCI to Docker format..."
 skopeo copy "oci:${IMAGE_NAME//:/_}-slim.oci.tar" "docker-archive:${IMAGE_NAME//:/_}-slim.docker.tar"
 
 # Load the revised archive back into the Docker daemon with .slim suffix
-echo "Loading ${IMAGE_NAME//:/_}.slim.docker.tar into Docker daemon as $IMAGE_NAME.slim..."
-docker load -i "${IMAGE_NAME//:/_}-slim.docker.tar"
+echo "Loading ${IMAGE_NAME//:/_}.slim.docker.tar into Docker daemon as $IMAGE_NAME-slim..."
+LOADED_HASH=$(docker load -i "${IMAGE_NAME//:/_}-slim.docker.tar" | cut -d ':' -f 3)
+echo ${LOADED_HASH}
+docker image tag ${LOADED_HASH}  ${IMAGE_NAME//:/}-slim  
 
 # Cleanup (optional, be careful with this part)
 echo "Cleaning up temporary files..."
-rm -f "${IMAGE_NAME//:/_}.*.tar"
+rm -f "${IMAGE_NAME}*"
 
 exit 0
 
 
 #!/bin/bash
-
-# Check for required tools
-if ! command -v skopeo &> /dev/null || ! command -v docker-repack &> /dev/null || ! command -v docker &> /dev/null; then
-  echo "Error: Required tools (skopeo, docker-repack, docker) are missing!"
-  exit 1
-fi
 
 # Validate input
 if [ -z "$1" ]; then
@@ -57,7 +59,7 @@ skopeo copy docker://$IMAGE dir://oci-archive
 # Step 2: Repack OCI archive using docker-repack
 echo "Repacking OCI archive to reduce size..."
 mkdir -p repacked-oci-archive
-docker-repack --target-level 1 -i oci-archive -o repacked-oci-archive
+docker-repack --target-level 50 -i oci-archive -o repacked-oci-archive
 
 # Step 3: Convert repacked OCI back to Docker format
 echo "Converting repacked OCI to Docker image..."
