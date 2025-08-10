@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eux
+set -eu
 
 # Check for required tools
 if ! command -v skopeo &> /dev/null || ! command -v docker-repack &> /dev/null || ! command -v docker &> /dev/null; then
