@@ -103,7 +103,8 @@ jobs:
       	shell: bash
 	run: |
 	     source setup-env
-	     scripts/image-push
+	     git tag $IMAGE_ID $GITHUB_IMAGE_ID
+	     git push $GITHUB_IMAGE_ID
 
       - name: Git Diffs (Frozen Version Specs)
         shell: bash

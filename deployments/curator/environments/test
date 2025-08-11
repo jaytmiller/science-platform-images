@@ -25,5 +25,7 @@ set -eu    # Either need -eu or have to combine failure statuses before exit
 
 # /opt/common-scripts/test-environments
 
-/opt/tools/nb-curator /opt/environment/nb-curator-spec.yaml --test-imports --test-notebooks
+cd /tmp 
+source /opt/tools/nb-curator environment
+/opt/tools/nb-curator /opt/environment/nb-curator-spec.yaml --clone-repos --test-imports --test-notebooks
 

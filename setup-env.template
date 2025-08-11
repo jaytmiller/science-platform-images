@@ -45,10 +45,11 @@ export NOTEBOOK_ID=notebook-${DEPLOYMENT_NAME}:${NOTEBOOK_TAG}  # abstract name 
 
 
 export DATE_TAG=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-export GITHUB_REGISTRY=ghcr.io
-export GITHUB_REPO=spacetelescope/science-platform-images
+export GITHUB_REGISTRY="ghcr.io"
+export GITHUB_ORG=spacetelescope
+export GITHUB_REPO=science-platform-images
 export GITHUB_TAG=notebook-${DEPLOYMENT_NAME}-${DATE_TAG}
-export GITHUB_IMAGE_ID=${GITHUB_REGISTRY}/${GITHUB_REPO}:${GITHUB_TAG}
+export GITHUB_IMAGE_ID=${GITHUB_REGISTRY}/${GITHUB_ORG}/${GITHUB_REPO}:${GITHUB_TAG}
 
 
 export UBUNTU_TAG="24.04"            # # Image scanning,  report Ubuntu status for this version of Ubuntu
