@@ -5,8 +5,6 @@ on:
         - main
       paths:
         - .nbc-spec-ingest/**
-   workflow_dispatch:
-
 jobs:
   docker:
     name: Notebook Curator Ingest
