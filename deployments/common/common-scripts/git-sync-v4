@@ -154,6 +154,9 @@ class DirPath(PosixPath):
         if not (mode & 0o700 == 0o700):  # user rwx
             self.chmod(mode | 0o700)
 
+    def rename(self, other):
+        shell(f"mv {str(self)} {str(other)}")
+
 
 class FilePath(PosixPath):
     """A file path."""
@@ -170,6 +173,9 @@ class FilePath(PosixPath):
     @property
     def closure(self) -> tuple[SortedSet[PosixPath], SortedSet[PosixPath]]:
         return SortedSet([self.parent]), SortedSet([self])
+
+    def rename(self, other):
+        shell(f"mv {str(self)} {str(other)}")
 
 
 FileOrDirPath = Union[FilePath, DirPath]
