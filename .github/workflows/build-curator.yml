@@ -132,7 +132,7 @@ jobs:
             git fetch origin
             git checkout origin/main
             git checkout -b archive-spec
-            NBC_CURATOR_SPEC=.nbc-spec-ingest/*
+            NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
             ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
             git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
             git commit -m "Archived $ARCHIVED_SPEC"
@@ -142,7 +142,6 @@ jobs:
             # gh pr merge ${PR_NUMBER} --merge --delete
 
       # XXXX Trivy missing config to run from built image, fails
-
       # ----- - name: Run Trivy vulnerability scanner on image
       # -----   uses: aquasecurity/trivy-action@master
       # -----   with:
@@ -152,6 +151,3 @@ jobs:
       # -----     format: table
       # -----     vuln-type: os,library
       # -----     severity: 'CRITICAL,HIGH,MEDIUM'
-
-
-      
