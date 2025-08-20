@@ -37,7 +37,7 @@ jobs:
           #
           # nb-curator setup
           #
-          pip install https://github.com/spacetelescope/nb-curator.git
+          pip install git+https://github.com/spacetelescope/nb-curator.git
           curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
           chmod +x nb-curator
           #./nb-curator bootstrap
