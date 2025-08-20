@@ -3,9 +3,9 @@ on:
    pull_request:
       branches:
         - main
-        - workflow_dispatch
       paths:
         - .nbc-spec-ingest/**
+   workflow_dispatch:
 
 jobs:
   docker:
@@ -43,6 +43,7 @@ jobs:
           curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
           chmod +x nb-curator
           #./nb-curator bootstrap
+
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
         run: |
@@ -71,6 +72,7 @@ jobs:
           git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
           source nb-curator environment
           nb-curator $NBC_CURATOR_SPEC --validate --verbose
+
       - name: Validate Repo Changes
         shell: bash
         run: |
@@ -79,6 +81,7 @@ jobs:
             # Change set can add one and only one spec
             if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+.nbc-spec-ingest/nbc-.*\.yaml'; then
                 echo "PR change set includes more than a single curator spec, REJECTED."
+		false
             fi
 
       - name: Image Build
@@ -120,6 +123,7 @@ jobs:
       - name: Set up GitHub CLI
         run: |
             sudo apt-get install gh
+
       - name: Merge Pull Request via gh
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
