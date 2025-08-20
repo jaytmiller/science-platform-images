@@ -1,6 +1,8 @@
 #! /bin/bash
 
-set -eu    # Either need -eu or have to combine failure statuses before exit
+set -e
+
+# Either need -eu or have to combine failure statuses before exit
 
 # Simple == fail script on first failed test.
 
