@@ -40,7 +40,7 @@ jobs:
           pip install git+https://github.com/spacetelescope/nb-curator.git
           curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
           chmod +x nb-curator
-          #./nb-curator bootstrap
+          ./nb-curator bootstrap
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
