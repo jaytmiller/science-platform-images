@@ -1,0 +1,157 @@
+name: Notebook Curator Build
+on:
+   pull_request:
+      branches:
+        - main
+        - workflow_dispatch
+      paths:
+        - .nbc-spec-ingest/**
+
+jobs:
+  docker:
+    name: Notebook Curator Ingest
+    runs-on: ubuntu-24.04
+    permissions:
+        packages:
+            write
+        contents:
+            read
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Configure
+        shell: bash
+        run: |
+          scripts/image-configure curator --base-notebook minimal-notebook
+
+      - name: Set Up Environment
+        shell: bash
+        run: |
+          # science platform images build dependencies
+          pip install -requirements.txt
+          #
+          # nb-curator setup
+          #
+          pip install https://github.com/spacetelescope/nb-curator.git
+          curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
+          chmod +x nb-curator
+          #./nb-curator bootstrap
+      - name: Free Disk Space,  Enlarge Swapfile
+        shell: bash
+        run: |
+          df -h
+          sudo apt clean
+          docker rmi $(docker image ls -aq)
+          docker container prune -f
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/local/lib/android # will release about 10 GB if you don't need Android
+          sudo rm -rf /usr/share/dotnet # will release about 20GB if you don't need .NET
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo fallocate -l 24G /swapfile
+          sudo chmod 0600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          cat /proc/meminfo
+          df -h
+
+      - name: Validate Spec
+        shell: bash
+        run: |
+          NBC_CURATOR_SPEC=.nbc-spec-ingest/*
+          ARCHIVED_SPEC="nbc-spec-archive/`basename $NBC_CURATOR_SPEC`"
+          git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
+          source nb-curator environment
+          nb-curator $NBC_CURATOR_SPEC --validate --verbose
+      - name: Validate Repo Changes
+        shell: bash
+        run: |
+            grep -v -E 'A\s+.nbc-spec-ingest/nbc-.*\.yaml'
+            DIFF_STATUS=$(git diff --name-status HEAD^ HEAD)
+            # Change set can add one and only one spec
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+.nbc-spec-ingest/nbc-.*\.yaml'; then
+                echo "PR change set includes more than a single curator spec, REJECTED."
+            fi
+
+      - name: Image Build
+        shell: bash
+        run: |
+           source setup-env
+           scripts/image-build
+           df -h
+           docker system df
+           docker system prune
+           docker image ls
+           df -h
+
+      - name: Image Functional Tests
+        shell: bash
+        run: |
+           df -h
+           source setup-env
+           source nb-curator environment
+           nb-curator 
+           scripts/image-test
+           df -h
+
+      - name: Image Push
+        shell: bash
+        run: |
+            source setup-env
+            git tag $IMAGE_ID $GITHUB_IMAGE_ID
+            git push $GITHUB_IMAGE_ID
+
+  github_steps:
+    name: Notebook Curator Ingest
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - name: Set up GitHub CLI
+        run: |
+            sudo apt-get install gh
+      - name: Merge Pull Request via gh
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
+
+      - name: Archive Curator Spec
+        shell: bash
+        run: |
+            git fetch origin
+            git checkout origin/main
+            git checkout -b archive-spec
+            NBC_CURATOR_SPEC=.nbc-spec-ingest/*
+            ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
+            git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
+            git commit -m "Archived $ARCHIVED_SPEC"
+            git push origin main
+            # gh pr create --base main --title "Archive Curator Spec" --body
+            # PR_NUMBER=$(gh pr list --head <branch> --json number --jq '..number')
+            # gh pr merge ${PR_NUMBER} --merge --delete
+
+      # XXXX Trivy missing config to run from built image, fails
+
+      # ----- - name: Run Trivy vulnerability scanner on image
+      # -----   uses: aquasecurity/trivy-action@master
+      # -----   with:
+      # -----     scan-type: image
+      # -----     image-ref: notebook-${{ matrix.DEPLOYMENT_NAME }}
+      # -----     ignore-unfixed: true
+      # -----     format: table
+      # -----     vuln-type: os,library
+      # -----     severity: 'CRITICAL,HIGH,MEDIUM'
+
+
+      

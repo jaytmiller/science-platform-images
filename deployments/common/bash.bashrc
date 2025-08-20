@@ -16,4 +16,9 @@ export LD_LIBRARY_PATH=/usr/local/lib
 # make non-login shell (notebook !) use same environment, picking up default kernel
 export BASH_ENV=/etc/bash.bashrc
 
+
+export NBC_ROOT=/opt/nbc-live
+export NBC_PANTRY=${HOME}/.nbc-pantry
+
+
 alias ls="ls --color=auto"
