@@ -236,7 +236,6 @@ STARTUP_NOW = hex(int(time.time()))[2:]
 
 def now() -> str:
     """Return the 8-digit hex representation of seconds since 1970."""
-    global STARTUP_NOW
     return STARTUP_NOW
 
 
