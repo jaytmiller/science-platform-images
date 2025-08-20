@@ -7,15 +7,8 @@ on:
    workflow_dispatch:
 jobs:
   security-scanning:
-    name: "${{ matrix.DEPLOYMENT_NAME }}  -- Security"
+    name: "Security -- All"
     runs-on: ubuntu-22.04
-
-    strategy:
-      max-parallel: 5
-      fail-fast: false
-      matrix:
-        DEPLOYMENT_NAME: [ jwebbinar, roman, tike]
-        USE_FROZEN: [ 0 ]
 
     steps:
       - name: Checkout Code
@@ -29,7 +22,7 @@ jobs:
       - name: Set Up Environment
         shell: bash
         run: |
-           scripts/image-configure ${{ matrix.DEPLOYMENT_NAME }}  --use-frozen ${{ matrix.USE_FROZEN }}
+           scripts/image-configure curator
            pip install -r requirements.txt
            df -h
 
