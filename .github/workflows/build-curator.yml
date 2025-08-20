@@ -68,8 +68,8 @@ jobs:
           NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
           ARCHIVED_SPEC="nbc-spec-archive/`basename $NBC_CURATOR_SPEC`"
           git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
-          source nb-curator environment
-          nb-curator $NBC_CURATOR_SPEC --validate --verbose
+          source ./nb-curator environment
+          ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
 
       - name: Validate Repo Changes
         shell: bash
@@ -96,8 +96,6 @@ jobs:
         run: |
            df -h
            source setup-env
-           source nb-curator environment
-           nb-curator 
            scripts/image-test
            df -h
 
