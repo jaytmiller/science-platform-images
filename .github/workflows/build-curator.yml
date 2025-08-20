@@ -74,12 +74,10 @@ jobs:
       - name: Validate Repo Changes
         shell: bash
         run: |
-            grep -v -E 'A\s+.nbc-spec-ingest/nbc-.*\.yaml'
-            DIFF_STATUS=$(git diff --name-status HEAD^ HEAD)
             # Change set can add one and only one spec
             if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+.nbc-spec-ingest/nbc-.*\.yaml'; then
                 echo "PR change set includes more than a single curator spec, REJECTED."
-		false
+                false
             fi
 
       - name: Image Build
