@@ -65,7 +65,7 @@ jobs:
       - name: Validate Spec
         shell: bash
         run: |
-          NBC_CURATOR_SPEC=.nbc-spec-ingest/*
+          NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
           ARCHIVED_SPEC="nbc-spec-archive/`basename $NBC_CURATOR_SPEC`"
           git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
           source nb-curator environment
