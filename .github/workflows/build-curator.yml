@@ -2,7 +2,7 @@ name: Notebook Curator Build
 on:
    pull_request:
       branches:
-        - nbc-spec-archive
+        - nbc-ingest
       paths:
         - .nbc-spec-ingest/**
 jobs:
@@ -13,9 +13,9 @@ jobs:
         packages:
             write
         contents:
-            read
+            write
+        pull-requests: write
     steps:
-
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -42,6 +42,7 @@ jobs:
           curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
           chmod +x nb-curator
           ./nb-curator bootstrap
+          sudo apt-get install gh
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
@@ -67,8 +68,6 @@ jobs:
         shell: bash
         run: |
           NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
-          ARCHIVED_SPEC="nbc-spec-archive/`basename $NBC_CURATOR_SPEC`"
-          git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
           source ./nb-curator environment
           ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
 
@@ -80,6 +79,31 @@ jobs:
                 echo "PR change set includes more than a single curator spec, REJECTED."
                 false
             fi
+
+      - name: Merge Pull Request via gh
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
+
+      - name: Archive Curator Spec
+        shell: bash
+        run: |
+            git fetch origin
+            cp .nbc-spec-ingest/*.yaml  nbc-spec-archive
+            git checkout origin/nbc-archive
+            git rebase origin/main
+            HEX_SECONDS=$(echo "$(date +%s)" | xargs printf "%x")
+            ARCHIVE_BRANCH=$(archive-spec-${HEX_SECONDS}
+            git checkout -b 
+                NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
+            ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
+            git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
+            git commit -m "Archived $ARCHIVED_SPEC"
+            git push origin nbc-spec-archive
+            # gh pr create --base main --title "Archive Curator Spec" --body
+            # PR_NUMBER=$(gh pr list --head <branch> --json number --jq '..number')
+            # gh pr merge ${PR_NUMBER} --merge --delete
 
       - name: Image Build
         shell: bash
@@ -106,40 +130,6 @@ jobs:
             source setup-env
             git tag $IMAGE_ID $GITHUB_IMAGE_ID
             git push $GITHUB_IMAGE_ID
-
-  github_steps:
-    name: Notebook Curator Ingest
-    runs-on: ubuntu-24.04
-    needs: docker
-    permissions:
-      pull-requests: write
-      contents: write
-
-    steps:
-      - name: Set up GitHub CLI
-        run: |
-            sudo apt-get install gh
-
-      - name: Merge Pull Request via gh
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-            gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
-
-      - name: Archive Curator Spec
-        shell: bash
-        run: |
-            git fetch origin
-            git checkout origin/nbc-spec-archive
-            git checkout -b archive-spec
-            NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
-            ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
-            git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
-            git commit -m "Archived $ARCHIVED_SPEC"
-            git push origin nbc-spec-archive
-            # gh pr create --base main --title "Archive Curator Spec" --body
-            # PR_NUMBER=$(gh pr list --head <branch> --json number --jq '..number')
-            # gh pr merge ${PR_NUMBER} --merge --delete
 
       # XXXX Trivy missing config to run from built image, fails
       # ----- - name: Run Trivy vulnerability scanner on image
