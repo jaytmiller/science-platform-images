@@ -89,15 +89,31 @@ jobs:
         run: |
             gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
 
+jobs:
+  after_merge:
+    runs-on: ubuntu-latest
+    permissions:
+        packages:
+            write
+        contents:
+            write
+    steps:
+      - name: Checkout merged target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}   # The target branch of the merged PR
+          fetch-depth: 0
+
+      - name: Update branch to latest commit (redundancy/safety)
+        run: git pull origin ${{ github.base_ref }}
+
       - name: Archive Curator Spec
         shell: bash
         run: |
-            git fetch origin
-            git rebase origin/
             NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
             ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
             cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nb-curator-spec.yaml
-            git add deployments/curator/enviroinments
+            git add deployments/curator/environments
             git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
             git commit -m "Archived $ARCHIVED_SPEC. Added to curator environments."
             git push origin nbc-archive
