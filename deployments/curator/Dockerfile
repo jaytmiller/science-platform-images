@@ -21,7 +21,7 @@ RUN mkdir -p ${NBC_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBC_ROOT} && \
 # Performing common update here enables mission specific frozen spec.
 
 COPY --chown=${NB_UID}:${NB_GID} env-frozen/base/  /opt/env-frozen/base/
-COPY --chown=${NB_UID}:${NB_GID} environments/common-hints.* /opt/environments/
+COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
 
 RUN   /opt/common-scripts/install-common  base && \
       fix-permissions
@@ -97,10 +97,9 @@ RUN echo "# -------------------------------- STSCI Config Overwrites -----------
 USER ${NB_UID}:${NB_GID}
 RUN /opt/environments/post-start-hook  docker   # docker == do not run hub-specific functions of hook
 
-USER root
-
-RUN /opt/environments/post-start-hook  docker   # docker == do not run hub-specific functions of hook
-RUN fix-permissions $CONDA_DIR $HOME
+# USER root
+# RUN /opt/environments/post-start-hook  docker   # docker == do not run hub-specific functions of hook
+# RUN fix-permissions $CONDA_DIR $HOME
 
 USER ${NB_UID}:${NB_GID}
 WORKDIR $HOME

@@ -90,17 +90,14 @@ jobs:
         shell: bash
         run: |
             git fetch origin
-            cp .nbc-spec-ingest/*.yaml  nbc-spec-archive
-            git checkout origin/nbc-archive
-            git rebase origin/main
-            HEX_SECONDS=$(echo "$(date +%s)" | xargs printf "%x")
-            ARCHIVE_BRANCH=$(archive-spec-${HEX_SECONDS}
-            git checkout -b 
-                NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
+            git rebase origin/
+            NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
             ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
+            cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nb-curator-spec.yaml
+            git add deployments/curator/enviroinments
             git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
-            git commit -m "Archived $ARCHIVED_SPEC"
-            git push origin nbc-spec-archive
+            git commit -m "Archived $ARCHIVED_SPEC. Added to curator environments."
+            git push origin nbc-archive
             # gh pr create --base main --title "Archive Curator Spec" --body
             # PR_NUMBER=$(gh pr list --head <branch> --json number --jq '..number')
             # gh pr merge ${PR_NUMBER} --merge --delete
