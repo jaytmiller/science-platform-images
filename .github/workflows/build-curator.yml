@@ -69,7 +69,7 @@ jobs:
       - name: Validate Spec
         shell: bash
         run: |
-          NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
+          NBC_CURATOR_SPEC=$(echo .nbc-spec-ingest/*.yaml)
           source ./nb-curator environment
           ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
 
@@ -100,7 +100,7 @@ jobs:
       - name: Archive Curator Spec
         shell: bash
         run: |
-            NBC_CURATOR_SPEC=.nbc-spec-ingest/*.yaml
+            NBC_CURATOR_SPEC=$(echo .nbc-spec-ingest/*.yaml)
             ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
             cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nb-curator-spec.yaml
             git add deployments/curator/environments
