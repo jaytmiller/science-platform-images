@@ -18,6 +18,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}   # The target branch of the merged PR
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -36,11 +39,7 @@ jobs:
       - name: Set Up Environment
         shell: bash
         run: |
-          # science platform images build dependencies
           pip install -r requirements.txt
-          #
-          # nb-curator setup
-          #
           pip install git+https://github.com/spacetelescope/nb-curator.git
           curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
           chmod +x nb-curator
@@ -89,15 +88,6 @@ jobs:
         run: |
             gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
 
-jobs:
-  after_merge:
-    runs-on: ubuntu-latest
-    permissions:
-        packages:
-            write
-        contents:
-            write
-    steps:
       - name: Checkout merged target branch
         uses: actions/checkout@v4
         with:
