@@ -128,6 +128,14 @@ jobs:
             git tag $IMAGE_ID $GITHUB_IMAGE_ID
             git push $GITHUB_IMAGE_ID
 
+      - name: Image Repack Slim and Push
+        shell: bash
+        run: |
+            source setup-env
+            image-repack $NOTEBOOK_ID  
+            git tag ${NOTEBOOK_ID}-slim $GITHUB_IMAGE_ID_SLIM
+            git push $GITHUB_IMAGE_ID_SLIM
+
       # XXXX Trivy missing config to run from built image, fails
       # ----- - name: Run Trivy vulnerability scanner on image
       # -----   uses: aquasecurity/trivy-action@master

@@ -42,7 +42,7 @@ export BASE_IMAGE=${OWNER}/${BASE_NOTEBOOK}
 
 export NOTEBOOK_TAG=latest
 export NOTEBOOK_ID=notebook-${DEPLOYMENT_NAME}:${NOTEBOOK_TAG}  # abstract name of mission-specific notebook image
-
+# export NOTEBOOK_ID_SLIM=${NOTEBOOK_ID}-slim  # this is implied by repack,  refactor if you really need it.
 
 export DATE_TAG=$(date -u +'%Y-%m-%d-%H-%M-%S')
 export GITHUB_REG="ghcr.io"
