@@ -34,6 +34,43 @@ jobs:
           git config --global user.name "Curator workflow"
           scripts/image-configure curator --base-notebook minimal-notebook
 
+      - name: Debug branch and files
+	run: |
+	  echo "Current branch: ${{ github.ref }}"
+	  echo "Repository: ${{ github.repository }}"
+	  echo "PR number: ${{ github.event.number }}"
+	  echo "HEAD commit: ${{ github.sha }}"
+
+	  # Show all files in the repository
+	  echo "All files in repo:"
+	  find . -type f | head -20
+
+	  # Show nbc-spec-archive directory contents
+	  echo "Contents of nbc-spec-archive:"
+	  if [ -d "nbc-spec-archive" ]; then
+	    ls -la nbc-spec-archive/
+	  else
+	    echo "Directory nbc-spec-archive does not exist"
+	  fi
+
+	  # Show git status
+	  git status
+
+	  # Show recent commits
+	  git log --oneline -5
+
+      - name: Check for YAML files in nbc-spec-archive
+	run: |
+	  if [ -d "nbc-spec-archive" ]; then
+	    echo "Found nbc-spec-archive directory"
+	    echo "YAML files:"
+	    find nbc-spec-archive/ -name "*.yaml" -type f
+	    echo "Total YAML files: $(find nbc-spec-archive/ -name "*.yaml" -type f | wc -l)"
+	  else
+	    echo "ERROR: nbc-spec-archive directory does not exist"
+	    exit 1
+	  fi
+
       - name: Set Up Environment
         shell: bash
         run: |
@@ -67,7 +104,7 @@ jobs:
       - name: Validate Spec
         shell: bash
         run: |
-          NBC_CURATOR_SPEC=$(ls -1t nbc-spec-archive/*.yaml | head -1)
+          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
           source ./nb-curator environment
           ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
 
@@ -83,7 +120,7 @@ jobs:
       - name: Install Curator Spec
         shell: bash
         run: |
-            NBC_CURATOR_SPEC=$(ls -1t nbc-spec-archive/*.yaml | head -1)
+            NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
             cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
 
     #   - name: Merge Pull Request via gh
