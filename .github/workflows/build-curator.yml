@@ -2,9 +2,9 @@ name: Notebook Curator Build
 on:
    pull_request:
       branches:
-        - nbc-ingest
+        - main
       paths:
-        - .nbc-spec-ingest/**
+        - nbc-spec-archive/**
 jobs:
   docker:
     name: Notebook Curator Ingest
@@ -69,7 +69,7 @@ jobs:
       - name: Validate Spec
         shell: bash
         run: |
-          NBC_CURATOR_SPEC=$(echo .nbc-spec-ingest/*.yaml)
+          NBC_CURATOR_SPEC=$(ls -1t nbc-spec-archive/*.yaml | head -1)
           source ./nb-curator environment
           ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
 
@@ -77,39 +77,45 @@ jobs:
         shell: bash
         run: |
             # Change set can add one and only one spec
-            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+.nbc-spec-ingest/nbc-.*\.yaml'; then
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbc-spec-archive/nbc-.*\.yaml'; then
                 echo "PR change set includes more than a single curator spec, REJECTED."
                 false
             fi
 
-      - name: Merge Pull Request via gh
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-            gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
-
-      - name: Checkout merged target branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.base_ref }}   # The target branch of the merged PR
-          fetch-depth: 0
-
-      - name: Update branch to latest commit (redundancy/safety)
-        run: git pull origin ${{ github.base_ref }}
-
-      - name: Archive Curator Spec
+      - name: Install Curator Spec
         shell: bash
         run: |
-            NBC_CURATOR_SPEC=$(echo .nbc-spec-ingest/*.yaml)
-            ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
-            cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nb-curator-spec.yaml
-            git add deployments/curator/environments
-            git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
-            git commit -m "Archived $ARCHIVED_SPEC. Added to curator environments."
-            git push origin nbc-archive
-            # gh pr create --base main --title "Archive Curator Spec" --body
-            # PR_NUMBER=$(gh pr list --head <branch> --json number --jq '..number')
-            # gh pr merge ${PR_NUMBER} --merge --delete
+            NBC_CURATOR_SPEC=$(ls -1t nbc-spec-archive/*.yaml | head -1)
+            cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
+
+    #   - name: Merge Pull Request via gh
+    #     env:
+    #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     run: |
+    #         gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
+
+    #   - name: Checkout merged target branch
+    #     uses: actions/checkout@v4
+    #     with:
+    #       ref: ${{ github.base_ref }}   # The target branch of the merged PR
+    #       fetch-depth: 0
+
+    #   - name: Update branch to latest commit (redundancy/safety)
+    #     run: git pull origin ${{ github.base_ref }}
+
+    #   - name: Archive Curator Spec
+    #     shell: bash
+    #     run: |
+    #         NBC_CURATOR_SPEC=$(echo .nbc-spec-ingest/*.yaml)
+    #         ARCHIVED_SPEC="nbc-spec-archive/$(basename $NBC_CURATOR_SPEC)"
+    #         cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nb-curator-spec.yaml
+    #         git add deployments/curator/environments
+    #         git mv $NBC_CURATOR_SPEC $ARCHIVED_SPEC
+    #         git commit -m "Archived $ARCHIVED_SPEC. Added to curator environments."
+    #         git push origin nbc-archive
+    #         # gh pr create --base main --title "Archive Curator Spec" --body
+    #         # PR_NUMBER=$(gh pr list --head <branch> --json number --jq '..number')
+    #         # gh pr merge ${PR_NUMBER} --merge --delete
 
       - name: Image Build
         shell: bash
