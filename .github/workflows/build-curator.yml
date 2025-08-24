@@ -32,8 +32,6 @@ jobs:
         run: |
           git config --global user.email "dmd_octarine@stsci.edu"
           git config --global user.name "Curator workflow"
-          git fetch origin
-          git rebase origin/main
           scripts/image-configure curator --base-notebook minimal-notebook
 
       - name: Set Up Environment
