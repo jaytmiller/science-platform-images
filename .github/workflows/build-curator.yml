@@ -172,7 +172,7 @@ jobs:
         shell: bash
         run: |
             source setup-env
-            git tag $IMAGE_ID $GITHUB_IMAGE_ID
+            docker tag $(docker image ls | head -2 | awk '{print $3;}' | tail -1)  ${GITHUB_IMAGE_ID}
             git push $GITHUB_IMAGE_ID
 
       - name: Image Repack Slim and Push
@@ -180,7 +180,7 @@ jobs:
         run: |
             source setup-env
             image-repack $NOTEBOOK_ID  
-            git tag ${NOTEBOOK_ID}-slim $GITHUB_IMAGE_ID_SLIM
+            docker tag $(docker image ls | head -2 | awk '{print $3;}' | tail -1)  ${GITHUB_IMAGE_ID_SLIM}
             git push $GITHUB_IMAGE_ID_SLIM
 
       # XXXX Trivy missing config to run from built image, fails
