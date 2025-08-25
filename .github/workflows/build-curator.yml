@@ -180,7 +180,7 @@ jobs:
             image-repack $NOTEBOOK_ID
 
       - name: Slim Image Push
-        shell:
+        shell: bash
 	run: |
             docker tag $(docker image ls | head -2 | awk '{print $3;}' | tail -1)  ${GITHUB_IMAGE_ID_SLIM}
             docker push $GITHUB_IMAGE_ID_SLIM
