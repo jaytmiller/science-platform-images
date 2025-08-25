@@ -4,18 +4,15 @@ on:
       branches:
         - main
       paths:
-        - nbc-spec-archive/**
+        - "nbc-spec-archive/**"
 jobs:
   docker:
     name: Notebook Curator Ingest
     runs-on: ubuntu-24.04
     permissions:
-        packages:
-            write
-        contents:
-            write
-        pull-requests:
-            write
+        packages: write
+        contents: write
+        pull-requests: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
