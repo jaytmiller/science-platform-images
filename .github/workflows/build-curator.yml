@@ -54,6 +54,13 @@ jobs:
           # Show recent commits
           git log --oneline -5
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Check for YAML files in nbc-spec-archive
         run: |
           if [ -d "nbc-spec-archive" ]; then
