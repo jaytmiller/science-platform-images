@@ -84,8 +84,9 @@ jobs:
           sudo apt-get install gh skopeo
           wget https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Linux-x86_64.tar.gz
           tar zxf docker-repack-Linux-x86_64.tar.gz
-          mv docker-repack scripts
           chmod +x docker-repack
+          mv docker-repack scripts
+
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
         run: |
