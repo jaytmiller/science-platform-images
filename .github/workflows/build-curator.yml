@@ -165,15 +165,15 @@ jobs:
             source setup-env
             image-repack $NOTEBOOK_ID
 
-      - name: Slim Image Push
-        shell: bash
-        run: |
-            export NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-            export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC} .yaml)
-            export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
-            export GITHUB_IMAGE_ID_SLIM=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}-slim.yaml
-            docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID_SLIM}
-            docker push ${GITHUB_IMAGE_ID_SLIM}
+      # ----- - name: Slim Image Push
+      # -----   shell: bash
+      # -----   run: |
+      # -----       export NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
+      # -----       export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC} .yaml)
+      # -----       export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
+      # -----       export GITHUB_IMAGE_ID_SLIM=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}-slim.yaml
+      # -----       docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID_SLIM}
+      # -----       docker push ${GITHUB_IMAGE_ID_SLIM}
 
       # XXXX Trivy missing config to run from built image, fails
       # ----- - name: Run Trivy vulnerability scanner on image
