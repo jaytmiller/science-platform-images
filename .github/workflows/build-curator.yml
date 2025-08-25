@@ -159,11 +159,11 @@ jobs:
             docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID}
             docker push $GITHUB_IMAGE_ID
 
-      - name: Image Repack Slim
-        shell: bash
-        run: |
-            source setup-env
-            image-repack $NOTEBOOK_ID
+      # ----- - name: Image Repack Slim
+      # -----   shell: bash
+      # -----   run: |
+      # -----       source setup-env
+      # -----       image-repack $NOTEBOOK_ID
 
       # ----- - name: Slim Image Push
       # -----   shell: bash
