@@ -82,11 +82,10 @@ jobs:
           chmod +x nb-curator
           ./nb-curator bootstrap
           sudo apt-get install gh skopeo
-	  wget https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Linux-x86_64.tar.gz
-	  tar zxf docker-repack-Linux-x86_64.tar.gz
-	  mv docker-repack scripts
-	  chmod +x docker-repack
-	  
+          wget https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Linux-x86_64.tar.gz
+          tar zxf docker-repack-Linux-x86_64.tar.gz
+          mv docker-repack scripts
+          chmod +x docker-repack
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
         run: |
@@ -153,9 +152,9 @@ jobs:
         run: |
             source setup-env
             export NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-	    export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC})
-	    export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
-	    export GITHUB_IMAGE_ID=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}
+            export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC})
+            export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
+            export GITHUB_IMAGE_ID=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}
             docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID}
             docker push $GITHUB_IMAGE_ID
 
@@ -169,9 +168,9 @@ jobs:
         shell: bash
         run: |
             export NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-	    export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC} .yaml)
-	    export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
-	    export GITHUB_IMAGE_ID_SLIM=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}-slim.yaml
+            export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC} .yaml)
+            export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
+            export GITHUB_IMAGE_ID_SLIM=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}-slim.yaml
             docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID_SLIM}
             docker push ${GITHUB_IMAGE_ID_SLIM}
 
