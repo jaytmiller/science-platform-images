@@ -91,28 +91,13 @@ jobs:
                 false
             fi
 
-      - name: Approve PR
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.PAT_TOKEN }}
-          script: |
-            github.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.pullRequest.number,
-              event: 'APPROVE'
-            })
-
-      - name: Merge PR
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.PAT_TOKEN }}
-          script: |
-            github.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.pullRequest.number
-            })
+      - name: Approve PR and Merge
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+            gh pr review --approve
+            gh pr merge --rebase --delete-branch
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
