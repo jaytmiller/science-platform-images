@@ -1,6 +1,6 @@
 name: Notebook Curator Build
 on:
-   pull_request:
+   pull_request_target:
       branches:
         - main
       paths:
@@ -96,8 +96,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-            gh pr review --approve
-            gh pr merge --rebase --delete-branch
+            gh pr review --approve ${{ github.event.number }}
+            gh pr merge --rebase --delete-branch ${{ github.event.number }}
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
