@@ -40,6 +40,7 @@ jobs:
           curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
           chmod +x nb-curator
           ./nb-curator bootstrap
+          cp nb-curator /tmp
 
       - name: Debug branch and files
         run: |
@@ -97,6 +98,12 @@ jobs:
                 false
             fi
 
+      - name: Stash spec
+        run: |
+          set -o pipefail
+          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
+          cp -v ${NBC_CURATOR_SPEC} /tmp/nbc-curator-spec.yaml
+
       # ========================= trusted ==============================================
 
       - name: Checkout PR branch
@@ -108,9 +115,9 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
+          cp /tmp/nbc-curator-spec.yaml .
           source ./nb-curator environment
-          ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
+          ./nb-curator nbc-curator-spec.yaml --validate --verbose
 
       # ========================= untrusted ==============================================
 
@@ -125,8 +132,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
             set -o pipefail
-            NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-            cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
+            cp /tmp/nbc-curator-spec.yaml deployments/curator/environments
             git add deployments/curator/environments/nbc-curator-spec.yaml
             git commit -m "Update curator/environments/nbc-curator-spec.yaml"
             git push origin ${{ github.event.pull_request.head.ref }}
