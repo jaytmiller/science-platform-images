@@ -56,9 +56,9 @@ jobs:
           git log --oneline -5
 
       - name: Checkout PR branch
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
+        run: |
+	  git fetch origin
+	  git checkout ${{ github.event.pull_request.head.sha }}
 
       - name: Check for YAML files in nbc-spec-archive
         run: |
@@ -112,6 +112,11 @@ jobs:
             git commit -m "Update curator/environments/nbc-curator-spec.yaml"
             git push origin ${{ github.event.pull_request.head.ref }}
 
+      - name: Checkout base branch (main)
+        run: |
+	  git fetch origin
+	  git checkout origin/main
+
       - name: Approve PR and Merge
         shell: bash
         env:
@@ -119,11 +124,6 @@ jobs:
         run: |
             gh pr review --approve ${{ github.event.number }}
             gh pr merge --admin --rebase --delete-branch ${{ github.event.number }}
-
-      - name: Checkout base branch (main)
-        uses: actions/checkout@v3
-        with:
-          ref: main
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
