@@ -13,9 +13,12 @@ jobs:
         packages: write
         contents: write
         pull-requests: write
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -28,6 +31,15 @@ jobs:
           git config --global user.email "dmd_octarine@stsci.edu"
           git config --global user.name "Curator workflow"
           scripts/image-configure curator --base-notebook minimal-notebook
+
+      - name: Set Up Environment
+        shell: bash
+        run: |
+          pip install -r requirements.txt
+          pip install git+https://github.com/spacetelescope/nb-curator.git
+          curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
+          chmod +x nb-curator
+          ./nb-curator bootstrap
 
       - name: Debug branch and files
         run: |
@@ -55,10 +67,12 @@ jobs:
           # Show recent commits
           git log --oneline -5
 
+      # ========================= untrusted ==============================================
+
       - name: Checkout PR branch
-        run: |
-          git fetch origin
-          git checkout ${{ github.event.pull_request.head.sha }}
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Check for YAML files in nbc-spec-archive
         run: |
@@ -73,23 +87,6 @@ jobs:
             exit 1
           fi
 
-      - name: Set Up Environment
-        shell: bash
-        run: |
-          pip install -r requirements.txt
-          pip install git+https://github.com/spacetelescope/nb-curator.git
-          curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
-          chmod +x nb-curator
-          ./nb-curator bootstrap
-
-      - name: Validate Spec
-        shell: bash
-        run: |
-          set -o pipefail
-          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-          source ./nb-curator environment
-          ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
-
       - name: Validate Repo Changes
         shell: bash
         run: |
@@ -100,6 +97,28 @@ jobs:
                 false
             fi
 
+      # ========================= trusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Validate Spec
+        shell: bash
+        run: |
+          set -o pipefail
+          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
+          source ./nb-curator environment
+          ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
+
+      # ========================= untrusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Install Curator Spec in curator/environments dir
         shell: bash
         env:
@@ -108,15 +127,16 @@ jobs:
             set -o pipefail
             NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
             cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
-            git fetch origin
             git add deployments/curator/environments/nbc-curator-spec.yaml
             git commit -m "Update curator/environments/nbc-curator-spec.yaml"
             git push origin ${{ github.event.pull_request.head.ref }}
 
-      - name: Checkout base branch (main)
-        run: |
-          git fetch origin
-          git checkout origin/main
+      # ========================= trusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
 
       - name: Approve PR and Merge
         shell: bash
