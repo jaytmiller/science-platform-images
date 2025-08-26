@@ -116,6 +116,7 @@ jobs:
         run: |
           set -o pipefail
           cp /tmp/nbc-curator-spec.yaml .
+          cp /tmp/nb-curator .
           source ./nb-curator environment
           ./nb-curator nbc-curator-spec.yaml --validate --verbose
 
