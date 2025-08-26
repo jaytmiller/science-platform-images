@@ -54,8 +54,14 @@ jobs:
           # Show recent commits
           git log --oneline -5
 
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Check for YAML files in nbc-spec-archive
         run: |
+          set -o pipefail
           if [ -d "nbc-spec-archive" ]; then
             echo "Found nbc-spec-archive directory"
             echo "YAML files:"
@@ -78,6 +84,7 @@ jobs:
       - name: Validate Spec
         shell: bash
         run: |
+          set -o pipefail
           NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
           source ./nb-curator environment
           ./nb-curator $NBC_CURATOR_SPEC --validate --verbose
@@ -86,10 +93,23 @@ jobs:
         shell: bash
         run: |
             # Change set can add one and only one spec
+            set -o pipefail
             if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbc-spec-archive/nbc-.*\.yaml'; then
                 echo "PR change set includes more than a single curator spec, REJECTED."
                 false
             fi
+
+      - name: Install Curator Spec in curator/environments dir
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+            set -o pipefail
+            NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
+            cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
+            git add deployments/curator/environments/nbc-curator-spec.yaml
+            git commit -m "Update curator/environments/nbc-curator-spec.yaml"
+            git push origin HEAD
 
       - name: Approve PR and Merge
         shell: bash
@@ -98,6 +118,11 @@ jobs:
         run: |
             gh pr review --approve ${{ github.event.number }}
             gh pr merge --admin --rebase --delete-branch ${{ github.event.number }}
+
+      - name: Checkout base branch (main)
+        uses: actions/checkout@v3
+        with:
+          ref: main
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
@@ -126,12 +151,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Curator Spec
-        shell: bash
-        run: |
-            NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-            cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
-
       - name: Image Build
         shell: bash
         run: |
@@ -154,6 +173,7 @@ jobs:
       - name: Image Push
         shell: bash
         run: |
+            set -o pipefail
             source setup-env
             export NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
             export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC})
@@ -162,7 +182,7 @@ jobs:
             docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID}
             docker push $GITHUB_IMAGE_ID
 
-      # ----- - name: Image Repack Slim
+      # ----- - name: Image Repack Slim   (XXXX runs out of disk space)
       # -----   shell: bash
       # -----   run: |
       # sudo apt-get install gh skopeo
