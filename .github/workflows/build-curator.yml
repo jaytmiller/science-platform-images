@@ -57,8 +57,8 @@ jobs:
 
       - name: Checkout PR branch
         run: |
-	  git fetch origin
-	  git checkout ${{ github.event.pull_request.head.sha }}
+          git fetch origin
+          git checkout ${{ github.event.pull_request.head.sha }}
 
       - name: Check for YAML files in nbc-spec-archive
         run: |
@@ -114,8 +114,8 @@ jobs:
 
       - name: Checkout base branch (main)
         run: |
-	  git fetch origin
-	  git checkout origin/main
+          git fetch origin
+          git checkout origin/main
 
       - name: Approve PR and Merge
         shell: bash
