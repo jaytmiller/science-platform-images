@@ -1,0 +1,155 @@
+name: Notebook Curator Validate Spec PR
+on:
+   pull_request_target:
+      branches:
+        - main
+      paths:
+        - "nbc-spec-archive/**"
+
+jobs:
+  docker:
+    name: Notebook Curator Ingest
+    runs-on: ubuntu-22.04
+    permissions:
+        packages: write
+        contents: write
+        pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Configure
+        shell: bash
+        run: |
+          git config --global user.email "dmd_octarine@stsci.edu"
+          git config --global user.name "Curator workflow"
+          scripts/image-configure curator --base-notebook minimal-notebook
+
+      - name: Set Up Environment
+        shell: bash
+        run: |
+          pip install -r requirements.txt
+          pip install git+https://github.com/spacetelescope/nb-curator.git
+          curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
+          chmod +x nb-curator
+          ./nb-curator bootstrap
+          cp nb-curator /tmp
+
+      - name: Debug branch and files
+        run: |
+          echo "Current branch: ${{ github.ref }}"
+          echo "PR'ed branch: ${{ github.event.pull_request.head.ref }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "PR number: ${{ github.event.number }}"
+          echo "HEAD commit: ${{ github.sha }}"
+
+          # Show all files in the repository
+          echo "All files in repo:"
+          find . -type f | head -20
+
+          # Show nbc-spec-archive directory contents
+          echo "Contents of nbc-spec-archive:"
+          if [ -d "nbc-spec-archive" ]; then
+            ls -la nbc-spec-archive/
+          else
+            echo "Directory nbc-spec-archive does not exist"
+          fi
+
+          # Show git status
+          git status
+
+          # Show recent commits
+          git log --oneline -5
+
+      # ========================= untrusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check for YAML files in nbc-spec-archive
+        run: |
+          set -o pipefail
+          if [ -d "nbc-spec-archive" ]; then
+            echo "Found nbc-spec-archive directory"
+            echo "YAML files:"
+            find nbc-spec-archive/ -name "*.yaml" -type f
+            echo "Total YAML files: $(find nbc-spec-archive/ -name "*.yaml" -type f | wc -l)"
+          else
+            echo "ERROR: nbc-spec-archive directory does not exist"
+            exit 1
+          fi
+
+      - name: Validate Repo Changes
+        shell: bash
+        run: |
+            # Change set can add one and only one spec
+            set -o pipefail
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbc-spec-archive/nbc-.*\.yaml'; then
+                echo "PR change set includes more than a single curator spec, REJECTED."
+                false
+            fi
+
+      - name: Stash spec
+        run: |
+          set -o pipefail
+          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
+          cp -v ${NBC_CURATOR_SPEC} /tmp/nbc-curator-spec.yaml
+
+      # ========================= trusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Validate Spec
+        shell: bash
+        run: |
+          set -o pipefail
+          cp /tmp/nbc-curator-spec.yaml .
+          cp /tmp/nb-curator .
+          source ./nb-curator environment
+          ./nb-curator nbc-curator-spec.yaml --validate --verbose
+
+      # ========================= untrusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install Curator Spec in curator/environments dir
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+            set -o pipefail
+            cp /tmp/nbc-curator-spec.yaml deployments/curator/environments
+            git add deployments/curator/environments/nbc-curator-spec.yaml
+            git commit -m "Update curator/environments/nbc-curator-spec.yaml"
+            git push origin HEAD
+
+      # ========================= trusted ==============================================
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Approve PR and Merge
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+            gh pr review --approve ${{ github.event.number }}
+            gh pr merge --admin --rebase --delete-branch ${{ github.event.number }}

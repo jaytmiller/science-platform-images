@@ -1,24 +1,20 @@
 name: Notebook Curator Build
 on:
-   pull_request_target:
+   push:
       branches:
         - main
       paths:
         - "nbc-spec-archive/**"
 jobs:
   docker:
-    name: Notebook Curator Ingest
+    name: Notebook Curator Build Image
     runs-on: ubuntu-22.04
     permissions:
         packages: write
-        contents: write
-        pull-requests: write
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -68,13 +64,6 @@ jobs:
           # Show recent commits
           git log --oneline -5
 
-      # ========================= untrusted ==============================================
-
-      - name: Checkout PR branch
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
       - name: Check for YAML files in nbc-spec-archive
         run: |
           set -o pipefail
@@ -98,60 +87,14 @@ jobs:
                 false
             fi
 
-      - name: Stash spec
-        run: |
-          set -o pipefail
-          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-          cp -v ${NBC_CURATOR_SPEC} /tmp/nbc-curator-spec.yaml
-
-      # ========================= trusted ==============================================
-
-      - name: Checkout PR branch
-        uses: actions/checkout@v3
-        with:
-          ref: main
 
       - name: Validate Spec
         shell: bash
         run: |
           set -o pipefail
-          cp /tmp/nbc-curator-spec.yaml .
-          cp /tmp/nb-curator .
           source ./nb-curator environment
-          ./nb-curator nbc-curator-spec.yaml --validate --verbose
+          ./nb-curator deployments/curator/environments/nbc-curator-spec.yaml --validate --verbose
 
-      # ========================= untrusted ==============================================
-
-      - name: Checkout PR branch
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Install Curator Spec in curator/environments dir
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-            set -o pipefail
-            cp /tmp/nbc-curator-spec.yaml deployments/curator/environments
-            git add deployments/curator/environments/nbc-curator-spec.yaml
-            git commit -m "Update curator/environments/nbc-curator-spec.yaml"
-            git push origin ${{ github.event.pull_request.head.ref }}
-
-      # ========================= trusted ==============================================
-
-      - name: Checkout PR branch
-        uses: actions/checkout@v3
-        with:
-          ref: main
-
-      - name: Approve PR and Merge
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-            gh pr review --approve ${{ github.event.number }}
-            gh pr merge --admin --rebase --delete-branch ${{ github.event.number }}
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
@@ -172,6 +115,7 @@ jobs:
           sudo swapon /swapfile
           cat /proc/meminfo
           df -h
+
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
@@ -198,6 +142,7 @@ jobs:
            source setup-env
            scripts/image-test
            df -h
+
 
       - name: Image Push
         shell: bash
