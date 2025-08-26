@@ -94,7 +94,7 @@ jobs:
       - name: Approve PR and Merge
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
             gh pr review --approve ${{ github.event.number }}
             gh pr merge --rebase --delete-branch ${{ github.event.number }}
