@@ -107,7 +107,7 @@ jobs:
 
       # ========================= trusted ==============================================
 
-      - name: Checkout PR branch
+      - name: Checkout main
         uses: actions/checkout@v3
         with:
           ref: main
@@ -141,7 +141,7 @@ jobs:
 
       # ========================= trusted ==============================================
 
-      - name: Checkout PR branch
+      - name: Checkout main
         uses: actions/checkout@v3
         with:
           ref: main
