@@ -108,6 +108,7 @@ jobs:
             set -o pipefail
             NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
             cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
+	    git fetch origin
             git add deployments/curator/environments/nbc-curator-spec.yaml
             git commit -m "Update curator/environments/nbc-curator-spec.yaml"
             git push origin ${{ github.event.pull_request.head.ref }}
