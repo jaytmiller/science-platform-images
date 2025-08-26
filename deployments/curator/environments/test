@@ -29,5 +29,5 @@ set -e
 
 cd /tmp 
 source /opt/tools/nb-curator environment
-/opt/tools/nb-curator /opt/environment/nb-curator-spec.yaml --clone-repos --test-imports --test-notebooks
+/opt/tools/nb-curator /opt/environments/nb-curator-spec.yaml --clone-repos --test-imports --test-notebooks
 
