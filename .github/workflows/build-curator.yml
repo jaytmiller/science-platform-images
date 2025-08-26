@@ -32,6 +32,7 @@ jobs:
       - name: Debug branch and files
         run: |
           echo "Current branch: ${{ github.ref }}"
+          echo "PR'ed branch: ${{ github.event.pull_request.head.ref }}
           echo "Repository: ${{ github.repository }}"
           echo "PR number: ${{ github.event.number }}"
           echo "HEAD commit: ${{ github.sha }}"
@@ -109,7 +110,7 @@ jobs:
             cp ${NBC_CURATOR_SPEC} deployments/curator/environments/nbc-curator-spec.yaml
             git add deployments/curator/environments/nbc-curator-spec.yaml
             git commit -m "Update curator/environments/nbc-curator-spec.yaml"
-            git push origin HEAD
+            git push origin ${{ github.event.pull_request.head.ref }}
 
       - name: Approve PR and Merge
         shell: bash
