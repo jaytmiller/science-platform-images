@@ -5,6 +5,7 @@ on:
         - main
       paths:
         - "nbc-spec-archive/**"
+   workflow_dispatch:
 jobs:
   docker:
     name: Notebook Curator Build Image
