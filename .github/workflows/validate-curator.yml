@@ -137,7 +137,7 @@ jobs:
             cp /tmp/nb-curator-spec.yaml deployments/curator/environments
             git add deployments/curator/environments/nb-curator-spec.yaml
             COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
-            git commit -m ${COMMIT_MSG}
+            git commit -m "${COMMIT_MSG}"
             git push origin HEAD:${{ github.head_ref }}
 
 
