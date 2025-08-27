@@ -142,7 +142,7 @@ jobs:
                 COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
                 git commit -m "${COMMIT_MSG}"
                 git push origin HEAD:${{ github.head_ref }}
-            endif
+            fi
 
       - name: Approve PR and Merge
         shell: bash
