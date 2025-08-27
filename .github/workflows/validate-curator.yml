@@ -74,7 +74,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.head_ref }}
 
       - name: Check for YAML files in nbc-spec-archive
         run: |
@@ -103,7 +103,7 @@ jobs:
         run: |
           set -o pipefail
           NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-          cp -v ${NBC_CURATOR_SPEC} /tmp/nbc-curator-spec.yaml
+          cp -v ${NBC_CURATOR_SPEC} /tmp/nb-curator-spec.yaml
 
       # ========================= trusted ==============================================
 
@@ -116,17 +116,17 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cp /tmp/nbc-curator-spec.yaml .
+          cp /tmp/nb-curator-spec.yaml .
           cp /tmp/nb-curator .
           source ./nb-curator environment
-          ./nb-curator nbc-curator-spec.yaml --validate --verbose
+          ./nb-curator nb-curator-spec.yaml --validate --verbose
 
       # ========================= untrusted ==============================================
 
       - name: Checkout PR branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.head_ref }}
 
       - name: Install Curator Spec in curator/environments dir
         shell: bash
@@ -134,17 +134,11 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
             set -o pipefail
-            cp /tmp/nbc-curator-spec.yaml deployments/curator/environments
-            git add deployments/curator/environments/nbc-curator-spec.yaml
-            git commit -m "Update curator/environments/nbc-curator-spec.yaml"
-            git push origin HEAD
+            cp /tmp/nb-curator-spec.yaml deployments/curator/environments
+            git add deployments/curator/environments/nb-curator-spec.yaml
+            git commit -m "Update curator/environments/nb-curator-spec.yaml"
+            git push origin HEAD:${{ github.head_ref }}
 
-      # ========================= trusted ==============================================
-
-      - name: Checkout main
-        uses: actions/checkout@v3
-        with:
-          ref: main
 
       - name: Approve PR and Merge
         shell: bash
