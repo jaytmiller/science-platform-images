@@ -94,7 +94,7 @@ jobs:
         run: |
             # Change set can add one and only one spec
             set -o pipefail
-            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbc-spec-archive/nbc-.*\.yaml'; then
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbc-spec-archive/nb-.*\.yaml'; then
                 echo "PR change set includes more than a single curator spec, REJECTED."
                 false
             fi
