@@ -28,6 +28,6 @@ set -e
 # /opt/common-scripts/test-environments
 
 cd /tmp 
-source /opt/tools/nb-curator environment
-/opt/tools/nb-curator /opt/environments/nb-curator-spec.yaml --clone-repos --test-imports --test-notebooks
+source /opt/tools/nb-wrangler environment
+/opt/tools/nb-wrangler /opt/environments/nb-wrangler-spec.yaml --clone-repos --test-imports --test-notebooks
 

@@ -8,7 +8,7 @@
 
 # ----------------- basic inputs,  must set for deployment --------------
 
-export DEPLOYMENT_NAME=cluster-name  # roman, jwebbinar, tike, curator
+export DEPLOYMENT_NAME=cluster-name  # roman, jwebbinar, tike, wrangler
 export ENVIRONMENT=sandbox           # sandbox, dev, test, prod, int
 export CAL_VERSION=none              # e.g. roman or jwst x.y.z CAL release, latest, or none
 

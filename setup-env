@@ -8,7 +8,7 @@
 
 # ----------------- basic inputs,  must set for deployment --------------
 
-export DEPLOYMENT_NAME=curator
+export DEPLOYMENT_NAME=wrangler
 export ENVIRONMENT=sandbox
 export CAL_VERSION=none
 

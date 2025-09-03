@@ -60,7 +60,7 @@ def main():
     )
     parser.add_argument(
         "deployment",
-        choices=["tike", "roman", "jwebbinar", "curator"],
+        choices=["tike", "roman", "jwebbinar", "wrangler"],
         help="The deployment name defining image contents.",
     )
     parser.add_argument(
@@ -107,7 +107,7 @@ def main():
         default="scipy-notebook",
         choices=["scipy-notebook", "minimal-notebook", "base-notebook", "pytorch-notebook", "tensorflow-notebook",
                  "julia-notebook", "pyspark-notebook", "r-notebook", "all-spark-notebook"],
-        help="Docker-stacks notebook type to build or pull.  scipy-notebook(tike,roman,jwebbinar), minimal-notebook(curator)"
+        help="Docker-stacks notebook type to build or pull.  scipy-notebook(tike,roman,jwebbinar), minimal-notebook(wrangler)"
     )
     args = parser.parse_args()
 

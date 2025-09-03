@@ -30,17 +30,17 @@ USER ${NB_UID}:${NB_GID}
 
 WORKDIR ${NBC_ROOT}
 
-RUN git clone https://github.com/spacetelescope/nb-curator && \
-    cd nb-curator && \
-    ./nb-curator bootstrap && \
+RUN git clone https://github.com/spacetelescope/nb-wrangler && \
+    cd nb-wrangler && \
+    ./nb-wrangler bootstrap && \
     chmod -R g+w ${NBC_ROOT} && \
-    cp nb-curator /opt/tools && \
+    cp nb-wrangler /opt/tools && \
     cd .. && \
-    rm -rf nb-curator ${NBC_ROOT}/cache ${NBC_ROOT}/mm/pkgs ${NBC_ROOT}/temps
+    rm -rf nb-wrangler ${NBC_ROOT}/cache ${NBC_ROOT}/mm/pkgs ${NBC_ROOT}/temps
 
 
-RUN source /opt/tools/nb-curator environment && \
-    nb-curator --reinstall --compact /opt/environments/nb-curator-spec.yaml
+RUN source /opt/tools/nb-wrangler environment && \
+    nb-wrangler --reinstall --compact /opt/environments/nb-wrangler-spec.yaml
 
 # Suppress tensorflow warnings by default, ERROR and up only
 ENV TF_CPP_MIN_LOG_LEVEL=2
