@@ -94,7 +94,7 @@ jobs:
         run: |
             # Change set can add one and only one spec
             set -o pipefail
-            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nb-.*\.yaml'; then
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nbw-.*\.yaml'; then
                 echo "PR change set includes more than a single wrangler spec, REJECTED."
                 false
             fi
