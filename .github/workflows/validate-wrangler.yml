@@ -103,7 +103,7 @@ jobs:
         run: |
           set -o pipefail
           NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | xargs ls -lt | head -1)
-          cp -v ${NBW_WRANGLER_SPEC} /tmp/nb-wrangler-spec.yaml
+          cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
 
       # ========================= trusted ==============================================
 
@@ -116,10 +116,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cp /tmp/nb-wrangler-spec.yaml .
+          cp /tmp/nbw-wrangler-spec.yaml .
           cp /tmp/nb-wrangler .
           source ./nb-wrangler environment
-          ./nb-wrangler nb-wrangler-spec.yaml --validate --verbose
+          ./nb-wrangler nbw-wrangler-spec.yaml --validate --verbose
 
       # ========================= untrusted ==============================================
 
@@ -134,11 +134,11 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
             set -o pipefail
-            NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nb-wrangler-spec.yaml)
-            OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nb-wrangler-spec.yaml)
+            NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nbw-wrangler-spec.yaml)
+            OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nbw-wrangler-spec.yaml)
             if [[ "${NEW_SPEC_HASH}" != "${OLD_SPEC_HASH}" ]]; then
-                cp /tmp/nb-wrangler-spec.yaml deployments/wrangler/environments
-                git add deployments/wrangler/environments/nb-wrangler-spec.yaml
+                cp /tmp/nbw-wrangler-spec.yaml deployments/wrangler/environments
+                git add deployments/wrangler/environments/nbw-wrangler-spec.yaml
                 COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
                 git commit -m "${COMMIT_MSG}"
                 git push origin HEAD:${{ github.head_ref }}
