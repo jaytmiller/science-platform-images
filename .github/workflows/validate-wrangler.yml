@@ -101,6 +101,7 @@ jobs:
 
       - name: Stash spec
         run: |
+          set -x
           set -o pipefail
           NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | xargs ls -lt | head -1)
           cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
@@ -133,6 +134,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
+            set -x
             set -o pipefail
             NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nbw-wrangler-spec.yaml)
             OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nbw-wrangler-spec.yaml)
