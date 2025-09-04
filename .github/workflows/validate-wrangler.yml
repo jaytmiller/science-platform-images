@@ -103,7 +103,7 @@ jobs:
         run: |
           set -x
           set -o pipefail
-          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | xargs ls -lt | head -1)
+          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | xargs ls -t | head -1)
           cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
 
       # ========================= trusted ==============================================
