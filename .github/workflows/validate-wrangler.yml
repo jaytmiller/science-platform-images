@@ -53,7 +53,7 @@ jobs:
 
           # Show all files in the repository
           echo "All files in repo:"
-          find . -type f | sort | head -20
+          find . -type f | sort | tail -20
 
           # Show nbw-spec-archive directory contents
           echo "Contents of nbw-spec-archive:"
@@ -103,7 +103,7 @@ jobs:
         run: |
           set -x
           set -o pipefail
-          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | head -1)
+          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
           cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
 
       # ========================= trusted ==============================================
