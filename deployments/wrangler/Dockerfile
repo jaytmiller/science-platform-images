@@ -3,18 +3,18 @@
 ARG BASE_IMAGE=notebook-common
 FROM $BASE_IMAGE AS build
 
-ARG NBC_ROOT="/opt/nbc-live"
-ENV NBC_ROOT="${NBC_ROOT}"
+ARG NBW_ROOT="/opt/nbw-live"
+ENV NBW_ROOT="${NBW_ROOT}"
 
-ARG NBC_PANTRY="/teams/users/nbc-pantry"
-ENV NBC_PANTRY="${NBC_PANTRY}"
+ARG NBW_PANTRY="/teams/users/nbw-pantry"
+ENV NBW_PANTRY="${NBW_PANTRY}"
 
 # ----------------------------------------------------------------------
 # Install environments
 
 USER root
-RUN mkdir -p ${NBC_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBC_ROOT} && \
-    mkdir -p ${NBC_PANTRY} && chown -R ${NB_UID}:${NB_GID} ${NBC_PANTRY}
+RUN mkdir -p ${NBW_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBW_ROOT} && \
+    mkdir -p ${NBW_PANTRY} && chown -R ${NB_UID}:${NB_GID} ${NBW_PANTRY}
 
 # ----------------------------------------------------------------------
 # Add jupyter-lab-extensions to base environment as well as standard packages.
@@ -28,15 +28,15 @@ RUN   /opt/common-scripts/install-common  base && \
 
 USER ${NB_UID}:${NB_GID}
 
-WORKDIR ${NBC_ROOT}
+WORKDIR ${NBW_ROOT}
 
 RUN git clone https://github.com/spacetelescope/nb-wrangler && \
     cd nb-wrangler && \
     ./nb-wrangler bootstrap && \
-    chmod -R g+w ${NBC_ROOT} && \
+    chmod -R g+w ${NBW_ROOT} && \
     cp nb-wrangler /opt/tools && \
     cd .. && \
-    rm -rf nb-wrangler ${NBC_ROOT}/cache ${NBC_ROOT}/mm/pkgs ${NBC_ROOT}/temps
+    rm -rf nb-wrangler ${NBW_ROOT}/cache ${NBW_ROOT}/mm/pkgs ${NBW_ROOT}/temps
 
 
 RUN source /opt/tools/nb-wrangler environment && \

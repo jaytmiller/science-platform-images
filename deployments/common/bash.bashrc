@@ -17,8 +17,8 @@ export LD_LIBRARY_PATH=/usr/local/lib
 export BASH_ENV=/etc/bash.bashrc
 
 
-export NBC_ROOT=/opt/nbc-live
-export NBC_PANTRY=${HOME}/.nbc-pantry
+export NBW_ROOT=/opt/nbw-live
+export NBW_PANTRY=${HOME}/.nbw-pantry
 
 
 alias ls="ls --color=auto"

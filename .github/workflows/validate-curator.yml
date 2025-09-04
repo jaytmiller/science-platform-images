@@ -1,14 +1,14 @@
-name: Notebook Curator Validate Spec PR
+name: Notebook Wrangler Validate Spec PR
 on:
    pull_request_target:
       branches:
         - main
       paths:
-        - "nbc-spec-archive/**"
+        - "nbw-spec-archive/**"
 
 jobs:
   docker:
-    name: Notebook Curator Ingest
+    name: Notebook Wrangler Ingest
     runs-on: ubuntu-22.04
     permissions:
         packages: write
@@ -30,18 +30,18 @@ jobs:
         shell: bash
         run: |
           git config --global user.email "dmd_octarine@stsci.edu"
-          git config --global user.name "Curator workflow"
-          scripts/image-configure curator --base-notebook minimal-notebook
+          git config --global user.name "Wrangler workflow"
+          scripts/image-configure wrangler --base-notebook minimal-notebook
 
       - name: Set Up Environment
         shell: bash
         run: |
           pip install -r requirements.txt
-          pip install git+https://github.com/spacetelescope/nb-curator.git
-          curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
-          chmod +x nb-curator
-          ./nb-curator bootstrap
-          cp nb-curator /tmp
+          pip install git+https://github.com/spacetelescope/nb-wrangler.git
+          curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
+          chmod +x nb-wrangler
+          ./nb-wrangler bootstrap
+          cp nb-wrangler /tmp
 
       - name: Debug branch and files
         run: |
@@ -55,12 +55,12 @@ jobs:
           echo "All files in repo:"
           find . -type f | head -20
 
-          # Show nbc-spec-archive directory contents
-          echo "Contents of nbc-spec-archive:"
-          if [ -d "nbc-spec-archive" ]; then
-            ls -la nbc-spec-archive/
+          # Show nbw-spec-archive directory contents
+          echo "Contents of nbw-spec-archive:"
+          if [ -d "nbw-spec-archive" ]; then
+            ls -la nbw-spec-archive/
           else
-            echo "Directory nbc-spec-archive does not exist"
+            echo "Directory nbw-spec-archive does not exist"
           fi
 
           # Show git status
@@ -76,16 +76,16 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Check for YAML files in nbc-spec-archive
+      - name: Check for YAML files in nbw-spec-archive
         run: |
           set -o pipefail
-          if [ -d "nbc-spec-archive" ]; then
-            echo "Found nbc-spec-archive directory"
+          if [ -d "nbw-spec-archive" ]; then
+            echo "Found nbw-spec-archive directory"
             echo "YAML files:"
-            find nbc-spec-archive/ -name "*.yaml" -type f
-            echo "Total YAML files: $(find nbc-spec-archive/ -name "*.yaml" -type f | wc -l)"
+            find nbw-spec-archive/ -name "*.yaml" -type f
+            echo "Total YAML files: $(find nbw-spec-archive/ -name "*.yaml" -type f | wc -l)"
           else
-            echo "ERROR: nbc-spec-archive directory does not exist"
+            echo "ERROR: nbw-spec-archive directory does not exist"
             exit 1
           fi
 
@@ -94,16 +94,16 @@ jobs:
         run: |
             # Change set can add one and only one spec
             set -o pipefail
-            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbc-spec-archive/nb-.*\.yaml'; then
-                echo "PR change set includes more than a single curator spec, REJECTED."
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nb-.*\.yaml'; then
+                echo "PR change set includes more than a single wrangler spec, REJECTED."
                 false
             fi
 
       - name: Stash spec
         run: |
           set -o pipefail
-          NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-          cp -v ${NBC_CURATOR_SPEC} /tmp/nb-curator-spec.yaml
+          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
+          cp -v ${NBW_WRANGLER_SPEC} /tmp/nb-wrangler-spec.yaml
 
       # ========================= trusted ==============================================
 
@@ -116,10 +116,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cp /tmp/nb-curator-spec.yaml .
-          cp /tmp/nb-curator .
-          source ./nb-curator environment
-          ./nb-curator nb-curator-spec.yaml --validate --verbose
+          cp /tmp/nb-wrangler-spec.yaml .
+          cp /tmp/nb-wrangler .
+          source ./nb-wrangler environment
+          ./nb-wrangler nb-wrangler-spec.yaml --validate --verbose
 
       # ========================= untrusted ==============================================
 
@@ -128,17 +128,17 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Install Curator Spec in curator/environments dir
+      - name: Install Wrangler Spec in wrangler/environments dir
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
             set -o pipefail
-            NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nb-curator-spec.yaml)
-            OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/curator/environments/nb-curator-spec.yaml)
+            NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nb-wrangler-spec.yaml)
+            OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nb-wrangler-spec.yaml)
             if [[ "${NEW_SPEC_HASH}" != "${OLD_SPEC_HASH}" ]]; then
-                cp /tmp/nb-curator-spec.yaml deployments/curator/environments
-                git add deployments/curator/environments/nb-curator-spec.yaml
+                cp /tmp/nb-wrangler-spec.yaml deployments/wrangler/environments
+                git add deployments/wrangler/environments/nb-wrangler-spec.yaml
                 COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
                 git commit -m "${COMMIT_MSG}"
                 git push origin HEAD:${{ github.head_ref }}

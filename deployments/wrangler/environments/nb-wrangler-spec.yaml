@@ -274,7 +274,7 @@ out:
         #   lightkurve
     boto3==1.39.11
         # via
-        #   -r /home/ai/.nbc-live/temps/tike-2025.07-beta-tess-extra-pip.txt
+        #   -r /home/ai/.nbw-live/temps/tike-2025.07-beta-tess-extra-pip.txt
         #   -r references/science-platform-images/deployments/common/common-env/common.pip
     botocore==1.39.11
         # via
@@ -1475,7 +1475,7 @@ out:
     - references/tike_content/content/notebooks/tglc/requirements.txt
     - references/tike_content/content/notebooks/zooniverse_view_lightcurve/requirements.txt
     - references/mast_notebooks/notebooks/Kepler/identifying_transiting_planet_signals/requirements.txt
-    - /home/ai/.nbc-live/temps/tike-2025.07-beta-tess-extra-pip.txt
+    - /home/ai/.nbw-live/temps/tike-2025.07-beta-tess-extra-pip.txt
     - references/science-platform-images/deployments/common/common-env/required.pip
     - references/science-platform-images/deployments/common/common-env/testing.pip
     - references/science-platform-images/deployments/common/common-env/jupyter.pip
@@ -1516,7 +1516,7 @@ out:
     references/mast_notebooks/notebooks/Kepler/identifying_transiting_planet_signals/requirements.txt:
       - lightkurve >= 2.4.2
       - numpy >= 1.23.4
-    /home/ai/.nbc-live/temps/tike-2025.07-beta-tess-extra-pip.txt:
+    /home/ai/.nbw-live/temps/tike-2025.07-beta-tess-extra-pip.txt:
       - boto3
     references/science-platform-images/deployments/common/common-env/required.pip:
       - '# packages required for the framework to work'

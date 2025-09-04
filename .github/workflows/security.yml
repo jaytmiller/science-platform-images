@@ -21,7 +21,7 @@ jobs:
       - name: Set Up Environment
         shell: bash
         run: |
-           scripts/image-configure curator
+           scripts/image-configure wrangler
            pip install -r requirements.txt
            df -h
 

@@ -1,14 +1,14 @@
-name: Notebook Curator Build
+name: Notebook Wrangler Build
 on:
    push:
       branches:
         - main
       paths:
-        - "nbc-spec-archive/**"
+        - "nbw-spec-archive/**"
    workflow_dispatch:
 jobs:
   docker:
-    name: Notebook Curator Build Image
+    name: Notebook Wrangler Build Image
     runs-on: ubuntu-22.04
     permissions:
         packages: write
@@ -26,25 +26,25 @@ jobs:
         shell: bash
         run: |
           git config --global user.email "dmd_octarine@stsci.edu"
-          git config --global user.name "Curator workflow"
-          scripts/image-configure curator --base-notebook minimal-notebook
+          git config --global user.name "Wrangler workflow"
+          scripts/image-configure wrangler --base-notebook minimal-notebook
 
       - name: Set Up Environment
         shell: bash
         run: |
           pip install -r requirements.txt
-          pip install git+https://github.com/spacetelescope/nb-curator.git
-          curl https://raw.githubusercontent.com/spacetelescope/nb-curator/refs/heads/main/nb-curator >nb-curator
-          chmod +x nb-curator
-          ./nb-curator bootstrap
+          pip install git+https://github.com/spacetelescope/nb-wrangler.git
+          curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
+          chmod +x nb-wrangler
+          ./nb-wrangler bootstrap
 
       - name: Validate Repo Changes
         shell: bash
         run: |
             # Change set can add one and only one spec
             set -o pipefail
-            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbc-spec-archive/nbc-.*\.yaml'; then
-                echo "PR change set includes more than a single curator spec, REJECTED."
+            if git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nbw-.*\.yaml'; then
+                echo "PR change set includes more than a single wrangler spec, REJECTED."
                 false
             fi
 
@@ -52,8 +52,8 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          source ./nb-curator environment
-          ./nb-curator deployments/curator/environments/nbc-curator-spec.yaml --validate --verbose
+          source ./nb-wrangler environment
+          ./nb-wrangler deployments/wrangler/environments/nbw-wrangler-spec.yaml --validate --verbose
 
 
       - name: Free Disk Space,  Enlarge Swapfile
@@ -109,8 +109,8 @@ jobs:
         run: |
             set -o pipefail
             source setup-env
-            export NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-            export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC} .yaml)
+            export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
+            export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)
             export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
             export GITHUB_IMAGE_ID=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}
             docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID}
@@ -130,8 +130,8 @@ jobs:
       # ----- - name: Slim Image Push
       # -----   shell: bash
       # -----   run: |
-      # -----       export NBC_CURATOR_SPEC=$(find nbc-spec-archive/ -name "*.yaml" -type f | head -1)
-      # -----       export GITHUB_TAG=$(basename ${NBC_CURATOR_SPEC} .yaml)
+      # -----       export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
+      # -----       export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)
       # -----       export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
       # -----       export GITHUB_IMAGE_ID_SLIM=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}-slim.yaml
       # -----       docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID_SLIM}

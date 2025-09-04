@@ -4,8 +4,8 @@ on:
       branches:
         - main
       paths-ignore:
-        - 'nbc-spec-archive/**'
-        - 'deployments/curator/**'
+        - 'nbw-spec-archive/**'
+        - 'deployments/wrangler/**'
    workflow_dispatch:
 
 jobs:
