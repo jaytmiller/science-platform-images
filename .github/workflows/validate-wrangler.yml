@@ -53,7 +53,7 @@ jobs:
 
           # Show all files in the repository
           echo "All files in repo:"
-          find . -type f | head -20 | xargs ls -lt
+          find . -type f | sort | head -20
 
           # Show nbw-spec-archive directory contents
           echo "Contents of nbw-spec-archive:"
@@ -82,7 +82,7 @@ jobs:
           if [ -d "nbw-spec-archive" ]; then
             echo "Found nbw-spec-archive directory"
             echo "YAML files:"
-            find nbw-spec-archive/ -name "*.yaml" -type f | xargs ls -lt
+            find nbw-spec-archive/ -name "*.yaml" -type f | sort
             echo "Total YAML files: $(find nbw-spec-archive/ -name "*.yaml" -type f | wc -l)"
           else
             echo "ERROR: nbw-spec-archive directory does not exist"
@@ -103,7 +103,7 @@ jobs:
         run: |
           set -x
           set -o pipefail
-          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | xargs ls -t | head -1)
+          NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | head -1)
           cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
 
       # ========================= trusted ==============================================
