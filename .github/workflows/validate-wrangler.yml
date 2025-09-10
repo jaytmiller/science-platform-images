@@ -140,11 +140,25 @@ jobs:
             OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nbw-wrangler-spec.yaml)
             if [[ "${NEW_SPEC_HASH}" != "${OLD_SPEC_HASH}" ]]; then
                 cp /tmp/nbw-wrangler-spec.yaml deployments/wrangler/environments
-                git add deployments/wrangler/environments/nbw-wrangler-spec.yaml
+                yq -r .out.mamba_spec deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.yml
+                yq -r .out.pip_compiler_output deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.txt
+                git add deployments/wrangler/environments/nbw-wrangler-spec.yaml \
+                    deployments/wrangler/env-frozen/wrangler.yml \
+                    deployments/wrangler/env-frozen/wrangler.txt
                 COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
                 git commit -m "${COMMIT_MSG}"
                 git push origin HEAD:${{ github.head_ref }}
             fi
+
+      - name: Run Trivy vulnerability scanner on file system
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          ignore-unfixed: true
+          format: table
+          vuln-type: os,library
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scan-ref: deployments/wrangler/env-frozen
 
       - name: Approve PR and Merge
         shell: bash
