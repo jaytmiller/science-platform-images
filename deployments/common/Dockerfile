@@ -104,7 +104,8 @@ RUN /opt/common-scripts/apt-install \
         graphviz \
         libopenblas-dev \
         zlib1g-dev \
-        git
+        git \
+        jq
 
 # Install Rust language;  0.5 - 1G of unrequested bloat
 # needed for tool compiles later,  download binaries instead

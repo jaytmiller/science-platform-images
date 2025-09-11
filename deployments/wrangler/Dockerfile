@@ -40,7 +40,7 @@ RUN git clone https://github.com/spacetelescope/nb-wrangler && \
 
 
 RUN source /opt/tools/nb-wrangler environment && \
-    nb-wrangler --reinstall --compact /opt/environments/nb-wrangler-spec.yaml
+    nb-wrangler --reinstall --compact /opt/environments/nbw-wrangler-spec.yaml
 
 # Suppress tensorflow warnings by default, ERROR and up only
 ENV TF_CPP_MIN_LOG_LEVEL=2
