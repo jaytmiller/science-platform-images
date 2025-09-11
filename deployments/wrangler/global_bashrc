@@ -1,6 +1,9 @@
+# set -x
+
 export PS1="${debian_chroot:+($debian_chroot)}\u@notebook:\w\$ "
 
 # Enable conda and activate jwst-masterclass by default
 . /opt/conda/etc/profile.d/conda.sh
 
-conda activate base
+kernel=$(yq -r --indentless .image_spec_header.kernel_name /opt/environments/nbw-wrangler-spec.yaml)
+source nb-wrangler activate ${kernel}
