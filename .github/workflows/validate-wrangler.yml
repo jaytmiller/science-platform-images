@@ -129,26 +129,26 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Install Wrangler Spec in wrangler/environments dir
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-            set -x
-            set -o pipefail
-            NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nbw-wrangler-spec.yaml)
-            OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nbw-wrangler-spec.yaml)
-            if [[ "${NEW_SPEC_HASH}" != "${OLD_SPEC_HASH}" ]]; then
-                cp /tmp/nbw-wrangler-spec.yaml deployments/wrangler/environments
-                yq -r .out.mamba_spec deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.yml
-                yq -r .out.pip_compiler_output deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.txt
-                git add deployments/wrangler/environments/nbw-wrangler-spec.yaml \
-                    deployments/wrangler/env-frozen/wrangler.yml \
-                    deployments/wrangler/env-frozen/wrangler.txt
-                COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
-                git commit -m "${COMMIT_MSG}"
-                git push origin HEAD:${{ github.head_ref }}
-            fi
+      # ---- - name: Install Wrangler Spec in wrangler/environments dir
+      # ----   shell: bash
+      # ----   env:
+      # ----     GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+      # ----   run: |
+      # ----       set -x
+      # ----       set -o pipefail
+      # ----       NEW_SPEC_HASH=$(yq '.system.spec_sha256' /tmp/nbw-wrangler-spec.yaml)
+      # ----       OLD_SPEC_HASH=$(yq '.system.spec_sha256' deployments/wrangler/environments/nbw-wrangler-spec.yaml)
+      # ----       if [[ "${NEW_SPEC_HASH}" != "${OLD_SPEC_HASH}" ]]; then
+      # ----           cp /tmp/nbw-wrangler-spec.yaml deployments/wrangler/environments
+      # ----           yq -r .out.mamba_spec deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.yml
+      # ----           yq -r .out.pip_compiler_output deployments/wrangler/environments/nbw-wrangler-spec.yaml >deployments/wrangler/env-frozen/wrangler.txt
+      # ----           git add deployments/wrangler/environments/nbw-wrangler-spec.yaml \
+      # ----               deployments/wrangler/env-frozen/wrangler.yml \
+      # ----               deployments/wrangler/env-frozen/wrangler.txt
+      # ----           COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
+      # ----           git commit -m "${COMMIT_MSG}"
+      # ----           git push origin HEAD:${{ github.head_ref }}
+      # ----       fi
 
       - name: Approve PR and Merge
         shell: bash
