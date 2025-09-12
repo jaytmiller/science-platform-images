@@ -23,10 +23,10 @@ RUN mkdir -p ${NBW_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBW_ROOT} && \
 COPY --chown=${NB_UID}:${NB_GID} env-frozen/base/  /opt/env-frozen/base/
 COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
 
+USER ${NB_UID}:${NB_GID}
+
 RUN   /opt/common-scripts/install-common  base && \
       fix-permissions
-
-USER ${NB_UID}:${NB_GID}
 
 WORKDIR ${NBW_ROOT}
 
@@ -41,6 +41,7 @@ RUN git clone https://github.com/spacetelescope/nb-wrangler && \
 
 RUN source /opt/tools/nb-wrangler environment && \
     nb-wrangler --reinstall --compact /opt/environments/nbw-wrangler-spec.yaml
+
 
 # Suppress tensorflow warnings by default, ERROR and up only
 ENV TF_CPP_MIN_LOG_LEVEL=2

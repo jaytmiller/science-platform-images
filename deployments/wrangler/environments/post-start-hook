@@ -49,7 +49,7 @@ ln -s $HOME/.lightkurve/cache  lightkurve
 
 notebook_repos=$(yq -y --indentless .out.notebook_repo_urls /opt/environments/nbw-wrangler-spec.yaml | cut -d' ' -f2)
 for repo in ${notebook_repos}; do
-    out=$(basename $repo | perl -pi -e's/.git//g')
+    out=$(basename $repo | perl -p -e's/.git//g')
     /opt/common-scripts/git-sync-v4 ${repo} main ${HOME}/references/${out}-ref
 done
 
