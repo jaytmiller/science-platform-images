@@ -28,5 +28,7 @@ set -e
 # /opt/common-scripts/test-environments
 
 cd /tmp
+
+source /etc/nb-wrangler.rc
 source /opt/tools/nb-wrangler environment
 /opt/tools/nb-wrangler /opt/environments/nbw-wrangler-spec.yaml --clone-repos --test-imports --test-notebooks

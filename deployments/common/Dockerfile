@@ -163,6 +163,8 @@ RUN cat /tmp/bash.bashrc >> /etc/bash.bashrc
 COPY bash.env /etc/bash.env
 ENV BASH_ENV=/etc/bash.env
 
+COPY nb-wrangler.rc  /etc/nb-wrangler.rc
+
 # ----------------------------------------------------------------------
 # Set up astroquery and ds9 desktop short-cut, will be further
 # augmented by specific deployments

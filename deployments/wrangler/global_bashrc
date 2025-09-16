@@ -5,5 +5,8 @@ export PS1="${debian_chroot:+($debian_chroot)}\u@notebook:\w\$ "
 # Enable conda and activate jwst-masterclass by default
 . /opt/conda/etc/profile.d/conda.sh
 
-kernel=$(yq -r --indentless .image_spec_header.kernel_name /opt/environments/nbw-wrangler-spec.yaml)
-source nb-wrangler activate ${kernel}
+# Customization for science-platform-images
+source /etc/nb-wrangler.rc
+
+# Generic builtin setup for nb-wrangler extending the above
+source nb-wrangler environment

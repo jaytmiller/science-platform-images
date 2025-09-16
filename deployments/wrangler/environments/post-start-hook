@@ -53,6 +53,8 @@ for repo in ${notebook_repos}; do
     /opt/common-scripts/git-sync-v4 ${repo} main ${HOME}/references/${out}-ref
 done
 
+source /etc/nb-wrangler.rc
+source nb-wrangler environment
 nb-wrangler /opt/environments/nbw-wrangler-spec.yaml --register-env
 
 # make sure the script does not fail blocking spawn.

@@ -6,8 +6,23 @@ FROM $BASE_IMAGE AS build
 ARG NBW_ROOT="/opt/nbw-live"
 ENV NBW_ROOT="${NBW_ROOT}"
 
-ARG NBW_PANTRY="/teams/users/nbw-pantry"
+ARG NBW_PANTRY="${HOME}/.nbw-pantry"
 ENV NBW_PANTRY="${NBW_PANTRY}"
+
+ARG NBW_MM="/opt/conda"
+ENV NBW_MM="${NBW_MM}"
+
+ARG NBW_MAMBA_CMD="mamba"
+ENV NBW_MAMBA_CMD="${NBW_MAMBA_CMD}"
+
+ARG NBW_PIP_CMD="pip"
+ENV NBW_PIP_CMD="${NBW_PIP_CMD}"
+
+ARG NBW_OVERRIDE_ENV="base"
+ENV NBW_OVERRIDE_ENV="${NBW_OVERRIDE_ENV}"
+
+ARG NBW_WRANGLER_ENV="base"
+ENV NBW_WRANGLER_ENV="${NBW_WRANGLER_ENV}"
 
 # ----------------------------------------------------------------------
 # Install environments
@@ -23,28 +38,39 @@ RUN mkdir -p ${NBW_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBW_ROOT} && \
 COPY --chown=${NB_UID}:${NB_GID} env-frozen/base/  /opt/env-frozen/base/
 COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
 
-USER ${NB_UID}:${NB_GID}
-
 RUN   /opt/common-scripts/install-common  base && \
-      fix-permissions
+         fix-permissions
 
 WORKDIR ${NBW_ROOT}
 
-RUN git clone https://github.com/spacetelescope/nb-wrangler && \
+# ----- RUN source /opt/tools/nb-wrangler environment && \
+# -----     nb-wrangler --reinstall --compact /opt/environments/nbw-wrangler-spec.yaml
+# /opt/common-scripts/env-run base \
+
+RUN source /etc/nb-wrangler.rc && \
+    which pip && \
+    printenv | grep NBW_
+
+RUN source /etc/nb-wrangler.rc && \
+    git clone https://github.com/spacetelescope/nb-wrangler && \
     cd nb-wrangler && \
-    ./nb-wrangler bootstrap && \
-    chmod -R g+w ${NBW_ROOT} && \
+    pip install . && \
     cp nb-wrangler /opt/tools && \
     cd .. && \
-    rm -rf nb-wrangler ${NBW_ROOT}/cache ${NBW_ROOT}/mm/pkgs ${NBW_ROOT}/temps
+    rm -rf nb-wrangler
 
-
-RUN source /opt/tools/nb-wrangler environment && \
-    nb-wrangler --reinstall --compact /opt/environments/nbw-wrangler-spec.yaml
-
+RUN source /etc/nb-wrangler.rc && \
+    source /opt/tools/nb-wrangler environment && \
+    python -m nb_wrangler --verbose --validate-spec --install-packages \
+           /opt/environments/nbw-wrangler-spec.yaml && \
+    CLEAR_PACKAGE_CACHES=1 /opt/common-scripts/env-clean base && \
+    CLEAR_PACKAGE_CACHES=1 /opt/common-scripts/env-clean tess && \
+    fix-permissions /opt $HOME
 
 # Suppress tensorflow warnings by default, ERROR and up only
 ENV TF_CPP_MIN_LOG_LEVEL=2
+
+USER ${NB_UID}:${NB_GID}
 
 # ========================= ^^^^^ Custom  ^^^^^ =========================
 # ========================= vvvvv Generic vvvvv  =========================
