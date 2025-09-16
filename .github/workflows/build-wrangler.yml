@@ -33,12 +33,12 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo rm -rf /usr/local/lib/android # will release about 10 GB if you don't need Android
           sudo rm -rf /usr/share/dotnet # will release about 20GB if you don't need .NET
-          # sudo swapoff -a
-          # sudo rm -f /swapfile
-          # sudo fallocate -l 24G /swapfile
-          # sudo chmod 0600 /swapfile
-          # sudo mkswap /swapfile
-          # sudo swapon /swapfile
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 0600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
           cat /proc/meminfo
           echo "Free space:"  $(df -h)
 
