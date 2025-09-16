@@ -58,11 +58,18 @@ jobs:
           source ./nb-wrangler environment
           ./nb-wrangler deployments/wrangler/environments/nbw-wrangler-spec.yaml --validate --verbose
 
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+         root-reserve-mb: 512
+         swap-size-mb: 1024
+         remove-dotnet: 'true'
+         remove-android: 'true'
 
       - name: Free Disk Space,  Enlarge Swapfile
         shell: bash
         run: |
-          df -h
+          echo "Free space:"  $(df -h)
           sudo apt clean
           # docker rmi $(docker image ls -aq)
           # docker container prune -f
@@ -70,15 +77,14 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo rm -rf /usr/local/lib/android # will release about 10 GB if you don't need Android
           sudo rm -rf /usr/share/dotnet # will release about 20GB if you don't need .NET
-          sudo swapoff -a
-          sudo rm -f /swapfile
-          sudo fallocate -l 24G /swapfile
-          sudo chmod 0600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          # sudo swapoff -a
+          # sudo rm -f /swapfile
+          # sudo fallocate -l 24G /swapfile
+          # sudo chmod 0600 /swapfile
+          # sudo mkswap /swapfile
+          # sudo swapon /swapfile
           cat /proc/meminfo
-          df -h
-
+          echo "Free space:"  $(df -h)
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
@@ -90,22 +96,22 @@ jobs:
       - name: Image Build
         shell: bash
         run: |
+           echo "Free space:"  $(df -h)
            source setup-env
            scripts/image-build
-           df -h
+           echo "Free space:"  $(df -h)
            docker system df
            docker system prune
            docker image ls
-           df -h
+           echo "Free space:"  $(df -h)
 
       - name: Image Functional Tests
         shell: bash
         run: |
-           df -h
+           echo "Free space:"  $(df -h)
            source setup-env
            scripts/image-test
-           df -h
-
+           echo "Free space:"  $(df -h)
 
       - name: Image Push
         shell: bash
@@ -113,6 +119,7 @@ jobs:
             set -o pipefail
             set -x
             # source setup-env
+            echo "Free space:"  $(df -h)
             export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
             export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)
             export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
