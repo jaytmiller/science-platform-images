@@ -14,6 +14,34 @@ jobs:
         packages: write
 
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+         root-reserve-mb: 512
+         swap-size-mb: 1024
+         remove-dotnet: 'true'
+         remove-android: 'true'
+
+      - name: Free Disk Space,  Enlarge Swapfile
+        shell: bash
+        run: |
+          echo "Free space:"  $(df -h)
+          sudo apt clean
+          # docker rmi $(docker image ls -aq)
+          # docker container prune -f
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/local/lib/android # will release about 10 GB if you don't need Android
+          sudo rm -rf /usr/share/dotnet # will release about 20GB if you don't need .NET
+          # sudo swapoff -a
+          # sudo rm -f /swapfile
+          # sudo fallocate -l 24G /swapfile
+          # sudo chmod 0600 /swapfile
+          # sudo mkswap /swapfile
+          # sudo swapon /swapfile
+          cat /proc/meminfo
+          echo "Free space:"  $(df -h)
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -57,34 +85,6 @@ jobs:
           cp -v ${NBW_WRANGLER_SPEC} deployments/wrangler/environments/nbw-wrangler-spec.yaml
           source ./nb-wrangler environment
           ./nb-wrangler deployments/wrangler/environments/nbw-wrangler-spec.yaml --validate --verbose
-
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-         root-reserve-mb: 512
-         swap-size-mb: 1024
-         remove-dotnet: 'true'
-         remove-android: 'true'
-
-      - name: Free Disk Space,  Enlarge Swapfile
-        shell: bash
-        run: |
-          echo "Free space:"  $(df -h)
-          sudo apt clean
-          # docker rmi $(docker image ls -aq)
-          # docker container prune -f
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          sudo rm -rf /usr/local/lib/android # will release about 10 GB if you don't need Android
-          sudo rm -rf /usr/share/dotnet # will release about 20GB if you don't need .NET
-          # sudo swapoff -a
-          # sudo rm -f /swapfile
-          # sudo fallocate -l 24G /swapfile
-          # sudo chmod 0600 /swapfile
-          # sudo mkswap /swapfile
-          # sudo swapon /swapfile
-          cat /proc/meminfo
-          echo "Free space:"  $(df -h)
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
