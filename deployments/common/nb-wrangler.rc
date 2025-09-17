@@ -7,3 +7,5 @@ export NBW_MAMBA_CMD=mamba
 export NBW_PIP_CMD=pip
 export NBW_OVERRIDE_ENV=base
 export NBW_WRANGLER_ENV=base
+export NBW_TEST_JOBS=1
+export NBW_TEST_MAX_SECS=1800
