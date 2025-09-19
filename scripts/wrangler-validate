@@ -4,7 +4,7 @@
 
 set -e
 
-git diff --name-status HEAD^ HEAD
+curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
 
 CHANGED_SPEC_COUNT=$(git diff --name-status HEAD^ HEAD | grep -E 'A\s+nbw-spec-archive/nbw-.*\.yaml' | wc -l)
 if [[ "${CHANGED_SPEC_COUNT}" != "1" ]]; then
@@ -17,4 +17,8 @@ if [[ "${CHANGES_NOT_SPEC}" != "0" ]]; then
    exit 1
 fi
 
-curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
+set -o pipefail
+
+cd $JUPYTERHUB_DIR
+NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
+python -m nb_wrangler ${NBW_WRANGLER_SPEC} --validate --verbose

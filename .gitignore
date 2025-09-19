@@ -1,5 +1,8 @@
 # Byte-compiled / optimized / DLL files
 
+scripts/skopeo
+scripts/docker-repack
+
 secrets/
 *~
 

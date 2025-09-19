@@ -60,12 +60,7 @@ jobs:
         run: |
              setup-env
              wrangler-validate
-
-      - name: Install and Validate Spec
-        shell: bash
-        run: |
-          setup-env
-          wrangler-update
+             wrangler-update  # install spec in deployments/wrangler/environments
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2

@@ -58,14 +58,14 @@ RUN source /etc/nb-wrangler.rc && \
     cp nb-wrangler /opt/tools && \
     cd .. && \
     rm -rf nb-wrangler && \
-    CLEAR_PKG_CACHES=1 /opt/common-scripts/env-clean && \
+    # CLEAR_PKG_CACHES=1 /opt/common-scripts/env-clean && \
     fix-permissions /opt $HOME
 
 RUN source /etc/nb-wrangler.rc && \
     source /opt/tools/nb-wrangler environment && \
-    python -m nb_wrangler --verbose --validate-spec --install-packages --compact \
+    python -m nb_wrangler --verbose --validate-spec --install-packages \
            /opt/environments/nbw-wrangler-spec.yaml && \
-    CLEAR_PKG_CACHES=1 /opt/common-scripts/env-clean && \
+    # CLEAR_PKG_CACHES=1 /opt/common-scripts/env-clean && \
     fix-permissions /opt $HOME
 
 # Suppress tensorflow warnings by default, ERROR and up only

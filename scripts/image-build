@@ -38,6 +38,8 @@ function repack {
         repack-image ${image}
 
         docker image rm ${image}
+        docker tag ${image}-slim ${image}
+        docker image rm ${image}-slim
     fi
 }
 

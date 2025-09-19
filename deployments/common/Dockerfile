@@ -76,9 +76,7 @@ RUN /opt/common-scripts/apt-install \
         sysstat \
         net-tools \
         rename \
-        stress-ng
-
-RUN /opt/common-scripts/apt-install \
+        stress-ng \
         libxcomposite1 \
         libxdamage1 \
         libgtk-3-0t64 \
@@ -107,10 +105,8 @@ RUN /opt/common-scripts/apt-install \
         git \
         jq
 
-# Install Rust language;  0.5 - 1G of unrequested bloat
-# needed for tool compiles later,  download binaries instead
+# Install Rust language
 # RUN /opt/common-scripts/apt-install cargo rustc
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal
 
 # Libraries for FITS, DS9, ML
 RUN /opt/common-scripts/apt-install \
@@ -179,6 +175,7 @@ COPY --chown=${NB_UID}:${NB_GID} VERSION /opt
 COPY --chown=${NB_UID}:${NB_GID} HASH /opt
 
 USER root
+RUN for DIR in ${USER_CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
 RUN fix-permissions $HOME /opt/conda
 
 USER ${NB_UID}:${NB_GID}
