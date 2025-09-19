@@ -93,6 +93,7 @@ jobs:
         shell: bash
         run: |
           source setup-env
+          printenv
           wrangler-validate
 
       - name: Stash spec

@@ -2,7 +2,7 @@
 
 # Validate that the PR diffs and wrangler specs are OK
 
-set -e
+set -ex
 
 curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
 
