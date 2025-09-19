@@ -110,6 +110,7 @@ RUN /opt/common-scripts/apt-install \
 # Install Rust language;  0.5 - 1G of unrequested bloat
 # needed for tool compiles later,  download binaries instead
 # RUN /opt/common-scripts/apt-install cargo rustc
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal
 
 # Libraries for FITS, DS9, ML
 RUN /opt/common-scripts/apt-install \
