@@ -30,6 +30,17 @@ else
     docker pull ${BASE_IMAGE}
 fi
 
+function repack {
+    image=$1
+    if [[ "$REPACK" == "1" ]]; then
+        echo "Repacking image to reduce size."
+        docker image ls
+        repack-image ${image}
+
+        docker image rm ${image}
+    fi
+}
+
 # ..................................................................................
 # Build STScI shared layer for all deployments
 cd ${COMMON_IMAGE_DIR}
@@ -45,6 +56,8 @@ time docker build \
        --build-arg USER_CACHE_DIRS="${USER_CACHE_DIRS}" \
        --file Dockerfile.cached  .
 rm Dockerfile.cached
+
+repack notebook-common
 
 # ..................................................................................
 # Build custom layers for this deployment, RUN caching leaves behind cache
@@ -76,6 +89,8 @@ docker build \
 
 # Once touched up we can discard this to reduce confusion
 docker rmi "notebook-${DEPLOYMENT_NAME}-dirty"
+
+repack $NOTEBOOK_ID
 
 # ..................................................................................
 # Optionally update requirements used by frozen builds.

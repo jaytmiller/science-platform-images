@@ -17,19 +17,16 @@ export USE_FROZEN=0                  # use 0 for loosely pinned package versions
 
 export FREEZE=1                     # dump new frozen requirements in image to modified files in this git repo
 
+export REPACK=0                     # repack the image to reduce size
+
 export PLATFORM="linux/amd64"       # os / instruction-set for built image: linux/amd64 or linux/aarch64
 
 
 
 # Set to "" (empty) for source build,  or quay.io/jupyter/ for current docker-stacks image.
 # jupyter is now at quay.io/jupyter/  needed to obtain fresh builds.  trailing backslash required
-
-
-
-export REGISTRY=""   
+export REGISTRY=""
 # export REGISTRY="quay.io/jupyter/"
-
-
 
 # OWNER=spacetelescope will be built from docker-stacks source code
 # quay.io/jupyter has the official pre-built images,  no trailing backslash

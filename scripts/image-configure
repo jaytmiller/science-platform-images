@@ -6,7 +6,7 @@ import shutil
 
 
 def create_setup_env_file(
-    platform, deployment_name, environment, use_frozen, freeze, cal_version, owner,
+    platform, deployment_name, environment, use_frozen, freeze, repack, cal_version, owner,
     base_notebook
 ):
     shutil.copy("setup-env.template", "setup-env")
@@ -37,6 +37,8 @@ def create_setup_env_file(
         content = re.sub(r"USE_FROZEN=[\d]", f"USE_FROZEN={use_frozen}", content)
 
         content = re.sub(r"FREEZE=[\d]", f"FREEZE={freeze}", content)
+
+        content = re.sub(r"REPACK=[\d]", f"REPACK={repack}", content)
 
         content = re.sub(r"CAL_VERSION=.+", f"CAL_VERSION={cal_version}", content)
 
@@ -90,6 +92,13 @@ def main():
         help="Don't freeze requirements, let them float to highest versions possible (default: 0).",
     )
     parser.add_argument(
+        "--repack",
+        type=int,
+        default=0,
+        choices=[0, 1],
+        help="Repack the image to reduce size.",
+    )
+    parser.add_argument(
         "--cal-version",
         default="none",
         help="Calibration s/w version when applicable (default: none).",
@@ -117,6 +126,7 @@ def main():
         args.environment,
         args.use_frozen,
         args.freeze,
+        args.repack,
         args.cal_version,
         args.owner,
         args.base_notebook

@@ -179,4 +179,5 @@ COPY --chown=${NB_UID}:${NB_GID} HASH /opt
 
 USER root
 RUN fix-permissions $HOME /opt/conda
+
 USER ${NB_UID}:${NB_GID}

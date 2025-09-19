@@ -1,7 +1,7 @@
 # ========================= vvvvv Custom  vvvvv =========================
 
-ARG BASE_IMAGE
-FROM "$BASE_IMAGE" AS build
+ARG BASE_IMAGE=notebook-common
+FROM $BASE_IMAGE AS build
 
 # ---------------------------------------------------------------
 # VARTOOLS Light Curve Analysis Program
@@ -135,10 +135,6 @@ RUN echo "# -------------------------------- STSCI Config Overwrites -----------
 
 USER ${NB_UID}:${NB_GID}
 RUN /opt/environments/post-start-hook  docker   # docker == do not run hub-specific functions of hook
-
-# USER root
-# RUN /opt/environments/post-start-hook  docker   # docker == do not run hub-specific functions of hook
-# RUN fix-permissions $CONDA_DIR $HOME
 
 USER ${NB_UID}:${NB_GID}
 WORKDIR $HOME

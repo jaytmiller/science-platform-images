@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -eux
+
+# Check for required tools
+if ! command -v skopeo &> /dev/null || ! command -v docker-repack &> /dev/null || ! command -v docker &> /dev/null; then
+  echo "Error: Required tools (skopeo, docker-repack, docker) are missing!"
+  repack-setup
+else
+  echo "Using pre-installed versions of skopeo and docker-repack."
+fi
+
+# Define the original image name and tag
+IMAGE_ID=${1:-${NOTEBOOK_ID}}
+
+cd $JUPYTERHUB_DIR
+rm -rf temp-repack
+mkdir temp-repack
+cd temp-repack
+
+# Export the image from Docker daemon to a tar archive
+echo "Exporting $IMAGE_ID from Docker daemon..."
+docker save "$IMAGE_ID" -o "${IMAGE_ID//:/_}.tar"
+
+# Convert the Docker image to OCI format using skopeo
+echo "Converting ${IMAGE_ID//:/_}.tar to OCI format..."
+skopeo copy "docker-archive:${IMAGE_ID//:/_}.tar" "oci:${IMAGE_ID//:/_}-fat.oci.tar"
+rm -rf "${IMAGE_ID//:/_}.tar"
+
+# Repack and reduce the size of the image using docker-repack
+echo "Repacking and reducing size of ${IMAGE_ID//:/_}:latest..."
+docker-repack --target-size 50MB "oci://`pwd`/${IMAGE_ID//:/_}-fat.oci.tar" "oci://`pwd`/${IMAGE_ID//:/_}-slim.oci.tar"
+rm -rf "${IMAGE_ID//:/_}-fat.oci.tar"
+
+# Convert the repacked OCI image back to Docker format
+echo "Converting ${IMAGE_ID//:/_}-slim.oci.tar from OCI to Docker format..."
+skopeo copy "oci:${IMAGE_ID//:/_}-slim.oci.tar" "docker-archive:${IMAGE_ID//:/_}-slim.docker.tar"
+rm -rf "${IMAGE_ID//:/_}-slim.oci.tar"
+
+# Load the revised archive back into the Docker daemon with .slim suffix
+echo "Loading ${IMAGE_ID//:/_}.slim.docker.tar into Docker daemon as $IMAGE_ID-slim..."
+LOADED_HASH=$(docker load -i "${IMAGE_ID//:/_}-slim.docker.tar" | cut -d ':' -f 3)
+echo ${LOADED_HASH}
+docker image tag ${LOADED_HASH}  ${IMAGE_ID}-slim
+
+# Cleanup (optional, be careful with this part)
+echo "Cleaning up temporary files..."
+cd ..
+rm -rf temp-repack
+
+exit 0
