@@ -8,6 +8,9 @@ export FREEZE=${FREEZE:-0}
 # ----------------- vvvv less frequently changed inputs vvvv -------------------------------
 #
 
+# Overrides Python used by docker-stacks to the base image environment
+export BASE_PYTHON_VERSION=3.11
+
 # Select "conda" tool used to install conda package and environments: conda or mamba
 #   mamba is largely a drop-in replacement for conda with improved dependency resolution,
 #   parallel downloads, and C++ implementation.
