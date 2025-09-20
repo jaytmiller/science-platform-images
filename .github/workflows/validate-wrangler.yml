@@ -75,8 +75,8 @@ jobs:
         shell: bash
         run: |
           source ./setup-env
-          echo "Wrangler PR diffs:"
-          git diff --name-status HEAD^ HEAD
+          # echo "Wrangler PR diffs:"
+          # git diff --name-status HEAD^ HEAD
           CHANGED_SPEC_COUNT=$(git diff --name-status HEAD^ HEAD | grep -E 'A\s+nbw-spec-archive/nbw-.*\.yaml' | wc -l)
           if [[ "${CHANGED_SPEC_COUNT}" != "1" ]]; then
              echo "There should be one and only one Wrangler spec added."
