@@ -20,7 +20,10 @@ jobs:
         run: |
           df -h
           sudo apt clean
-          docker rmi $(docker image ls -aq)
+          existing_images=$(docker image ls -aq)
+          if [[ ${existing_images} != "" ]]; then
+             docker rmi ${existing_images}
+          fi
           docker container prune -f
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
