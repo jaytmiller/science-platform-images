@@ -2,11 +2,11 @@
 
 # Validate that the PR diffs and wrangler specs are OK,  must be on PR branch
 
-set -ex
-
 echo "Key env variables:"
 printenv | grep PATH
 printenv | grep NBW_
+
+set -ex
 
 echo "Wrangler PR diffs:"
 git diff --name-status HEAD^ HEAD
