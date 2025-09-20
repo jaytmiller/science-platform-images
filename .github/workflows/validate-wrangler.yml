@@ -37,8 +37,6 @@ jobs:
         shell: bash
         run: |
           pip install -r requirements.txt
-          cp scripts/wrangler-validate /tmp
-          cp setup-env /tmp
 
       - name: Debug branch and files
         run: |
@@ -76,10 +74,22 @@ jobs:
       - name: Validate Repo Changes
         shell: bash
         run: |
-          cp tmp/setup-env .
-          cp tmp/wrangler-validate scripts
           source ./setup-env
-          scripts/wrangler-validate
+          echo "Key env variables:"
+          printenv | grep PATH
+          printenv | grep NBW_
+          echo "Wrangler PR diffs:"
+          git diff --name-status HEAD^ HEAD
+          CHANGED_SPEC_COUNT=$(git diff --name-status HEAD^ HEAD | grep -E 'A\s+nbw-spec-archive/nbw-.*\.yaml' | wc -l)
+          if [[ "${CHANGED_SPEC_COUNT}" != "1" ]]; then
+             echo "There should be one and only one Wrangler spec added."
+             exit 1
+          fi
+          CHANGES_NOT_SPEC=$(git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nbw-.*\.yaml')
+          if [[ "${CHANGES_NOT_SPEC}" != "0" ]]; then
+             echo "PR change set includes more than a single wrangler spec, REJECTED."
+             exit 1
+          fi
           NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
           cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
 

@@ -58,8 +58,10 @@ jobs:
       - name: Validate Spec
         shell: bash
         run: |
-             setup-env
-             wrangler-update  # install spec in deployments/wrangler/environments
+             source setup-env
+             NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
+             python -m nb_wrangler ${NBW_WRANGLER_SPEC} --validate --verbose
+             cp -v ${NBW_WRANGLER_SPEC} deployments/wrangler/environments/nbw-wrangler-spec.yaml
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
