@@ -4,13 +4,16 @@
 
 set -ex
 
-curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
+echo "Wrangler PR diffs:"
+git diff --name-status HEAD^ HEAD
+
 
 CHANGED_SPEC_COUNT=$(git diff --name-status HEAD^ HEAD | grep -E 'A\s+nbw-spec-archive/nbw-.*\.yaml' | wc -l)
 if [[ "${CHANGED_SPEC_COUNT}" != "1" ]]; then
    echo "There should be one and only one Wrangler spec added."
    exit 1
 fi
+
 CHANGES_NOT_SPEC=$(git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nbw-.*\.yaml')
 if [[ "${CHANGES_NOT_SPEC}" != "0" ]]; then
    echo "PR change set includes more than a single wrangler spec, REJECTED."
