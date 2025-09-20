@@ -75,9 +75,6 @@ jobs:
         shell: bash
         run: |
           source ./setup-env
-          echo "Key env variables:"
-          printenv | grep PATH
-          printenv | grep NBW_
           echo "Wrangler PR diffs:"
           git diff --name-status HEAD^ HEAD
           CHANGED_SPEC_COUNT=$(git diff --name-status HEAD^ HEAD | grep -E 'A\s+nbw-spec-archive/nbw-.*\.yaml' | wc -l)
