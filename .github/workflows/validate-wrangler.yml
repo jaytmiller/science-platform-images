@@ -37,6 +37,8 @@ jobs:
         shell: bash
         run: |
           pip install -r requirements.txt
+          cp scripts/wrangler-validate /tmp
+          cp setup-env /tmp
 
       - name: Debug branch and files
         run: |
@@ -66,22 +68,25 @@ jobs:
       # ========================= untrusted ==============================================
 
       - name: Checkout PR branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+          fetch-depth: 2
 
       - name: Validate Repo Changes
         shell: bash
         run: |
-          source setup-env
-          wrangler-validate
+          cp tmp/setup-env .
+          cp tmp/wrangler-validate scripts
+          source ./setup-env
+          scripts/wrangler-validate
           NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
           cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
 
       # ========================= trusted ==============================================
 
       - name: Checkout main
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: main
 
@@ -94,9 +99,10 @@ jobs:
       # ========================= untrusted ==============================================
 
       - name: Checkout PR branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+          fetch-depth: 2
 
       - name: Approve PR and Merge
         shell: bash

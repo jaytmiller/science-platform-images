@@ -22,9 +22,3 @@ if [[ "${CHANGES_NOT_SPEC}" != "0" ]]; then
    echo "PR change set includes more than a single wrangler spec, REJECTED."
    exit 1
 fi
-
-set -o pipefail
-
-cd $JUPYTERHUB_DIR
-NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
-python -m nb_wrangler ${NBW_WRANGLER_SPEC} --validate --verbose

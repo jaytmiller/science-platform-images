@@ -55,11 +55,10 @@ jobs:
           git config --global user.name "Wrangler workflow"
           scripts/image-configure wrangler --use-frozen 0 --freeze 0 --base-notebook minimal-notebook --repack 1
 
-      - name: Validate Repo Changes (Only one spec can be added to nbw-spec-archive)
+      - name: Validate Spec
         shell: bash
         run: |
              setup-env
-             wrangler-validate
              wrangler-update  # install spec in deployments/wrangler/environments
 
       - name: Log in to GitHub Container Registry
