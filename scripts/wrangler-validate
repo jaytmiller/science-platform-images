@@ -1,12 +1,15 @@
 #! /bin/bash
 
-# Validate that the PR diffs and wrangler specs are OK
+# Validate that the PR diffs and wrangler specs are OK,  must be on PR branch
 
 set -ex
 
+echo "Key env variables:"
+printenv | grep PATH
+printenv | grep NBW_
+
 echo "Wrangler PR diffs:"
 git diff --name-status HEAD^ HEAD
-
 
 CHANGED_SPEC_COUNT=$(git diff --name-status HEAD^ HEAD | grep -E 'A\s+nbw-spec-archive/nbw-.*\.yaml' | wc -l)
 if [[ "${CHANGED_SPEC_COUNT}" != "1" ]]; then

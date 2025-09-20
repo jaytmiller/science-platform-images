@@ -19,7 +19,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: main   # ${{ github.event.pull_request.head.ref }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -37,11 +37,6 @@ jobs:
         shell: bash
         run: |
           pip install -r requirements.txt
-          pip install git+https://github.com/spacetelescope/nb-wrangler.git
-          curl https://raw.githubusercontent.com/spacetelescope/nb-wrangler/refs/heads/main/nb-wrangler >nb-wrangler
-          chmod +x nb-wrangler
-          ./nb-wrangler bootstrap
-          cp nb-wrangler /tmp
 
       - name: Debug branch and files
         run: |
@@ -51,9 +46,8 @@ jobs:
           echo "PR number: ${{ github.event.number }}"
           echo "HEAD commit: ${{ github.sha }}"
 
-          # Show all files in the repository
-          echo "All files in repo:"
-          find . -type f | sort | tail -20
+          echo "All scripts:"
+          find scripts -type f | sort
 
           # Show nbw-spec-archive directory contents
           echo "Contents of nbw-spec-archive:"
@@ -76,30 +70,11 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Check for YAML files in nbw-spec-archive
-        run: |
-          set -o pipefail
-          if [ -d "nbw-spec-archive" ]; then
-            echo "Found nbw-spec-archive directory"
-            echo "YAML files:"
-            find nbw-spec-archive/ -name "*.yaml" -type f | sort
-            echo "Total YAML files: $(find nbw-spec-archive/ -name "*.yaml" -type f | wc -l)"
-          else
-            echo "ERROR: nbw-spec-archive directory does not exist"
-            exit 1
-          fi
-
       - name: Validate Repo Changes
         shell: bash
         run: |
           source setup-env
-          printenv
           wrangler-validate
-
-      - name: Stash spec
-        run: |
-          set -x
-          set -o pipefail
           NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
           cp -v ${NBW_WRANGLER_SPEC} /tmp/nbw-wrangler-spec.yaml
 
@@ -113,11 +88,8 @@ jobs:
       - name: Validate Spec
         shell: bash
         run: |
-          set -o pipefail
           cp /tmp/nbw-wrangler-spec.yaml .
-          cp /tmp/nb-wrangler .
-          source ./nb-wrangler environment
-          ./nb-wrangler nbw-wrangler-spec.yaml --validate --verbose
+          python -m nb_wrangler nbw-wrangler-spec.yaml --validate --verbose
 
       # ========================= untrusted ==============================================
 
