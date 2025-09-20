@@ -84,7 +84,7 @@ jobs:
           set +e
           CHANGES_NOT_SPEC=$(git diff --name-status HEAD^ HEAD | grep -v -E 'A\s+nbw-spec-archive/nbw-.*\.yaml')
           set -e
-          if [[ "${CHANGES_NOT_SPEC}" != "0" ]]; then
+          if [[ "${CHANGES_NOT_SPEC}" != "" ]]; then
              echo "PR change set includes more than a single wrangler spec, REJECTED."
              exit 1
           fi
