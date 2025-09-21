@@ -47,9 +47,9 @@ WORKDIR ${NBW_ROOT}
 # -----     nb-wrangler --reinstall --compact /opt/environments/nbw-wrangler-spec.yaml
 # /opt/common-scripts/env-run base \
 
-RUN source /etc/nb-wrangler.rc && \
-    which pip && \
-    printenv | grep NBW_
+# RUN source /etc/nb-wrangler.rc && \
+#    which pip && \
+#    printenv | grep NBW_
 
 RUN source /etc/nb-wrangler.rc && \
     git clone https://github.com/spacetelescope/nb-wrangler && \
