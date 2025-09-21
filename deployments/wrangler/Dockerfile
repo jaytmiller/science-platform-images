@@ -24,6 +24,8 @@ ENV NBW_OVERRIDE_ENV="${NBW_OVERRIDE_ENV}"
 ARG NBW_WRANGLER_ENV="base"
 ENV NBW_WRANGLER_ENV="${NBW_WRANGLER_ENV}"
 
+SHELL ["/bin/bash", "-c"]
+
 # ----------------------------------------------------------------------
 # Install environments
 
