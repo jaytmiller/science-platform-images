@@ -40,35 +40,26 @@ RUN mkdir -p ${NBW_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBW_ROOT} && \
 COPY --chown=${NB_UID}:${NB_GID} env-frozen/base/  /opt/env-frozen/base/
 COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
 
-RUN   /opt/common-scripts/install-common  base && \
-         fix-permissions
+USER ${NB_UID}
+RUN   /opt/common-scripts/install-common  base
 
 WORKDIR ${NBW_ROOT}
 
-# ----- RUN source /opt/tools/nb-wrangler environment && \
-# -----     nb-wrangler --reinstall --compact /opt/environments/nbw-wrangler-spec.yaml
-# /opt/common-scripts/env-run base \
-
-# RUN source /etc/nb-wrangler.rc && \
-#    which pip && \
-#    printenv | grep NBW_
-
+# Install wrangler directly in base environment
 RUN source /etc/nb-wrangler.rc && \
     git clone https://github.com/spacetelescope/nb-wrangler && \
     cd nb-wrangler && \
     pip install . && \
     cp nb-wrangler /opt/tools && \
     cd .. && \
-    rm -rf nb-wrangler && \
-    # CLEAR_PKG_CACHES=1 /opt/common-scripts/env-clean && \
-    fix-permissions /opt $HOME
+    /opt/common-scripts/env-clean && \
+    rm -rf nb-wrangler
 
 RUN source /etc/nb-wrangler.rc && \
     source /opt/tools/nb-wrangler environment && \
     python -m nb_wrangler --verbose --validate-spec --install-packages \
            /opt/environments/nbw-wrangler-spec.yaml && \
-    # CLEAR_PKG_CACHES=1 /opt/common-scripts/env-clean && \
-    fix-permissions /opt $HOME
+    /opt/common-scripts/env-clean
 
 # Suppress tensorflow warnings by default, ERROR and up only
 ENV TF_CPP_MIN_LOG_LEVEL=2

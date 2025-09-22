@@ -36,10 +36,11 @@ function repack {
         echo "Repacking image to reduce size."
         docker image ls
         repack-image ${image}
-
+        docker image ls
         docker image rm ${image}
         docker tag ${image}-slim ${image}
         docker image rm ${image}-slim
+        docker image ls
     fi
 }
 
@@ -55,7 +56,7 @@ time docker build \
        --build-arg USE_FROZEN=${USE_FROZEN} \
        --build-arg PIP_SWITCHES="${PIP_SWITCHES}" \
        --build-arg CONDA_VER=${CONDA_VER} \
-       --build-arg USER_CACHE_DIRS="${USER_CACHE_DIRS}" \
+       --build-arg CACHE_DIRS="${CACHE_DIRS}" \
        --file Dockerfile.cached  .
 rm Dockerfile.cached
 
@@ -86,7 +87,7 @@ docker build \
      ${DOCKER_BUILD_ARGS} \
        --tag $NOTEBOOK_ID \
        --build-arg BASE_CONTAINER="notebook-${DEPLOYMENT_NAME}-dirty" \
-       --build-arg USER_CACHE_DIRS="${USER_CACHE_DIRS}" \
+       --build-arg CACHE_DIRS="${CACHE_DIRS}" \
        --file Dockerfile.cache .
 
 # Once touched up we can discard this to reduce confusion

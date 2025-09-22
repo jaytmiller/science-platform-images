@@ -5,54 +5,54 @@ import re
 import shutil
 
 
-def create_setup_env_file(
-    platform, deployment_name, environment, use_frozen, freeze, repack, cal_version, owner,
-    base_notebook
-):
+def create_setup_env_file(args) -> None:
+
     shutil.copy("setup-env.template", "setup-env")
 
-    use_frozen = {"floating": "0", "frozen": "1"}.get(use_frozen, use_frozen)
+    use_frozen = {"floating": "0", "frozen": "1"}.get(args.use_frozen, args.use_frozen)
 
     with open("setup-env", "r") as file:
         content = file.read()
 
         content = re.sub(
             r"DEPLOYMENT_NAME=.+",
-            f"DEPLOYMENT_NAME={deployment_name}",
+            f"DEPLOYMENT_NAME={args.deployment}",
             content,
         )
 
         content = re.sub(
             r"PLATFORM=.+",
-            f"PLATFORM={platform}",
+            f"PLATFORM={args.platform}",
             content,
         )
 
         content = re.sub(
             r"ENVIRONMENT=.+",
-            f"ENVIRONMENT={environment}",
+            f"ENVIRONMENT={args.environment}",
             content,
         )
 
         content = re.sub(r"USE_FROZEN=[\d]", f"USE_FROZEN={use_frozen}", content)
 
-        content = re.sub(r"FREEZE=[\d]", f"FREEZE={freeze}", content)
+        content = re.sub(r"FREEZE=[\d]", f"FREEZE={args.freeze}", content)
 
-        content = re.sub(r"REPACK=[\d]", f"REPACK={repack}", content)
+        content = re.sub(r"REPACK=[\d]", f"REPACK={args.repack}", content)
 
-        content = re.sub(r"CAL_VERSION=.+", f"CAL_VERSION={cal_version}", content)
+        content = re.sub(r"CAL_VERSION=.+", f"CAL_VERSION={args.cal_version}", content)
 
-        content = re.sub(r"OWNER=.+", f"OWNER={owner}", content)
-        if owner == "spacetelescope":
+        content = re.sub(r"OWNER=.+", f"OWNER={args.owner}", content)
+        if args.owner == "spacetelescope":
             content = re.sub(r"REGISTRY=.+", 'REGISTRY=""', content)
         else:
-            content = re.sub(r"REGISTRY=.+", f'REGISTRY="{owner}/"', content)
+            content = re.sub(r"REGISTRY=.+", f'REGISTRY="{args.owner}/"', content)
 
-        content = re.sub(r"BASE_NOTEBOOK=.+", f"BASE_NOTEBOOK={base_notebook}", content)
+        content = re.sub(r"BASE_NOTEBOOK=.+", f"BASE_NOTEBOOK={args.base_notebook}", content)
+
+    if args.no_docker_caching:
+        content += "\nexport CACHE_DIRS=''\n"
 
     with open("setup-env", "w+") as file:
         file.write(content)
-
     print(content)
 
 
@@ -99,6 +99,11 @@ def main():
         help="Repack the image to reduce size.",
     )
     parser.add_argument(
+        "--no-docker-caching",
+        action="store_true",
+        help="Don't use the per-RUN Docker daemon build caches defined by CACHE_DIRS.  Set CACHE_DIRS to ''.",
+    )
+    parser.add_argument(
         "--cal-version",
         default="none",
         help="Calibration s/w version when applicable (default: none).",
@@ -120,18 +125,7 @@ def main():
     )
     args = parser.parse_args()
 
-    create_setup_env_file(
-        args.platform,
-        args.deployment,
-        args.environment,
-        args.use_frozen,
-        args.freeze,
-        args.repack,
-        args.cal_version,
-        args.owner,
-        args.base_notebook
-    )
-
+    create_setup_env_file(args)
 
 if __name__ == "__main__":
     main()

@@ -18,6 +18,7 @@ ENV CONDA_DIR=/opt/conda
 ENV SHELL=/bin/bash
 ENV PATH=${CONDA_DIR}/bin:${PATH}
 ENV CFLAGS="-fcommon -fpic"
+ENV PIP_TOOLS_CACHE_DIR=$HOME/.cache/pip
 
 ARG TZ='America/New_York'
 ARG DEBIAN_FRONTEND=noninteractive
@@ -35,8 +36,8 @@ ENV CONDA_VER=${CONDA_VER}
 ARG MAMBA_ROOT_PREFIX=/opt/conda
 ENV MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX}
 
-ARG USER_CACHE_DIRS=""
-ENV USER_CACHE_DIRS=${USER_CACHE_DIRS}
+ARG CACHE_DIRS=""
+ENV CACHE_DIRS=${CACHE_DIRS}
 
 # These are duplicated in jupyter/docker-stacks so need to be changed
 # in both locations.  Better than hard coding in scripts though.
@@ -48,7 +49,7 @@ ENV NB_GID=100
 
 USER root
 
-RUN for DIR in ${USER_CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
+RUN for DIR in ${CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
 
 # ------------------------------------------------------------------------
 # Breaking into separate runs will build slower but also defines storage
@@ -150,9 +151,6 @@ USER root
 # Keep Xfce directories out of home and set up shortcuts for DS9.
 #COPY user-dirs.defaults /etc/xdg/user-dirs.defaults
 
-COPY --chown=${NB_UID}:${NB_GID}  common-scripts/ /opt/common-scripts
-COPY --chown=${NB_UID}:${NB_GID}  common-env/ /opt/common-env
-
 COPY bash.bashrc /tmp
 RUN cat /tmp/bash.bashrc >> /etc/bash.bashrc
 
@@ -165,17 +163,19 @@ COPY nb-wrangler.rc  /etc/nb-wrangler.rc
 # ----------------------------------------------------------------------
 # Set up astroquery and ds9 desktop short-cut, will be further
 # augmented by specific deployments
+
 USER ${NB_UID}:${NB_GID}
-COPY default-home-contents/   /etc/default-home-contents
-
-ENV  PIP_TOOLS_CACHE_DIR=$HOME/.cache/pip
-
+COPY --chown=${NB_UID}:${NB_GID}  common-scripts/ /opt/common-scripts
+COPY --chown=${NB_UID}:${NB_GID}  common-env/ /opt/common-env
+COPY --chown=${NB_UID}:${NB_GID}  default-home-contents/   /etc/default-home-contents
 COPY --chown=${NB_UID}:${NB_GID}  tools/  /opt/tools/
 COPY --chown=${NB_UID}:${NB_GID} VERSION /opt
 COPY --chown=${NB_UID}:${NB_GID} HASH /opt
 
 USER root
-RUN for DIR in ${USER_CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
-RUN fix-permissions $HOME /opt/conda
+RUN for DIR in ${CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
+
+RUN chown -R ${NB_UID}:${NB_GID} $HOME /opt/conda && \
+    fix-permissions $HOME /opt/conda
 
 USER ${NB_UID}:${NB_GID}
