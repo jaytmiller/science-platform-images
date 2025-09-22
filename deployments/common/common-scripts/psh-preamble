@@ -16,6 +16,8 @@ set -u
 
 HUB_FLAG=${1:-"on-hub"}
 
+source /opt/common-scripts/env-activate base
+
 # .............................................................................................
 # Quota checking is only relevant to cloud deployments,  standalone sessions have no quotas.
 # .............................................................................................

@@ -24,7 +24,7 @@ ENV NBW_PANTRY="${NBW_PANTRY}"
 # ----- ARG NBW_WRANGLER_ENV="base"
 # ----- ENV NBW_WRANGLER_ENV="${NBW_WRANGLER_ENV}"
 
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "--login", "-c"]
 
 # ----------------------------------------------------------------------
 # Install environments
@@ -48,7 +48,7 @@ RUN   /opt/common-scripts/install-common  base
 WORKDIR ${NBW_ROOT}
 
 # Install wrangler directly in base environment
-RUN source /etc/nb-wrangler.rc && \
+RUN source /opt/common-scripts/env-activate base && \
     git clone https://github.com/spacetelescope/nb-wrangler && \
     cd nb-wrangler && \
     pip install . && \
@@ -57,7 +57,7 @@ RUN source /etc/nb-wrangler.rc && \
     /opt/common-scripts/env-clean && \
     rm -rf nb-wrangler
 
-RUN source /etc/nb-wrangler.rc && \
+RUN source /opt/common-scripts/env-activate base && \
     python -m nb_wrangler --verbose --validate-spec --install-packages --compact \
            /opt/environments/nbw-wrangler-spec.yaml && \
     /opt/common-scripts/env-clean

@@ -6,6 +6,8 @@
 ARG BASE_IMAGE=spacetelescope/scipy-notebook
 FROM "$BASE_IMAGE"
 
+SHELL ["/bin/bash", "--login", "-c"]
+
 # ------------------------------------------------------------------------
 
 LABEL maintainer="Science Platforms <dmd_octarine@stsci.edu>"
@@ -143,7 +145,7 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 USER root
 
 # Load conda profile scripts by default, symlink target doesn't exist for a bit
-RUN ln -s ${CONDA_DIR}/etc/profile.d/${CONDA_VER}.sh /etc/profile.d/conda.sh
+RUN ln -s ${CONDA_DIR}/etc/profile.d/${CONDA_VER}.sh /etc/profile.d/${CONDA_VER}.sh
 
 # ------------------------------------------------------------------------
 USER root

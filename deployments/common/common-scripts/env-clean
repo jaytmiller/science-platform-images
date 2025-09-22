@@ -6,7 +6,7 @@ set -e
 if [ -z "${USER_CACHE_DIRS}" ]; then
     echo "-------------------------------------------------------------------------------"
     echo "===== Cleaning up conda env..."
-    . /etc/profile.d/conda.sh
+    . /etc/profile.d/${CONDA_VER}.sh
     ${CONDA_VER} clean -fya
     # ${CONDA_VER} build purge-all
     rm -rf $HOME/.cache/pip
