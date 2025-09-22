@@ -30,14 +30,14 @@ ARG PIP_SWITCHES=""
 ENV PIP_SWITCHES=$PIP_SWITCHES
 
 # Enable easy swap of conda with e.g. mamba
-ARG CONDA_VER=conda
+ARG CONDA_VER=mamba
 ENV CONDA_VER=${CONDA_VER}
 
 ARG MAMBA_ROOT_PREFIX=/opt/conda
 ENV MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX}
 
 ARG USER_CACHE_DIRS=""
-ENV USER_CACHE_DIRS=${USER_CACHE_DIRS}
+ENV USER_CACHE_DIRS="${USER_CACHE_DIRS}"
 
 # These are duplicated in jupyter/docker-stacks so need to be changed
 # in both locations.  Better than hard coding in scripts though.
@@ -143,7 +143,7 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 USER root
 
 # Load conda profile scripts by default, symlink target doesn't exist for a bit
-RUN ln -s ${CONDA_DIR}/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+RUN ln -s ${CONDA_DIR}/etc/profile.d/${CONDA_VER}.sh /etc/profile.d/conda.sh
 
 # ------------------------------------------------------------------------
 USER root

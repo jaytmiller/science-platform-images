@@ -10,8 +10,9 @@ def add_mounts_to_run(dockerfile, mount_dirs):
         for line in file:
             if "RUN " in line:
                 for mount in mount_dirs:
+                    # NOTE: uid and gid are assumed to be jovyan:users, i.e. 1000:100
                     line = line.replace(
-                        "RUN ", f"RUN --mount=type=cache,mode=0777,target={mount} "
+                        "RUN ", f"RUN --mount=type=cache,mode=0777,uid=1000,gid=100,target={mount} "
                     )
             result += line
     print(result)

@@ -9,4 +9,3 @@ source /etc/profile.d/conda.sh
 conda activate $env
 set -u
 # conda env list
-

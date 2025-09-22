@@ -9,20 +9,20 @@ ENV NBW_ROOT="${NBW_ROOT}"
 ARG NBW_PANTRY="${HOME}/.nbw-pantry"
 ENV NBW_PANTRY="${NBW_PANTRY}"
 
-ARG NBW_MM="/opt/conda"
-ENV NBW_MM="${NBW_MM}"
+# ----- ARG NBW_MM="/opt/conda"
+# ----- ENV NBW_MM="${NBW_MM}"
 
-ARG NBW_MAMBA_CMD="mamba"
-ENV NBW_MAMBA_CMD="${NBW_MAMBA_CMD}"
+# ----- ARG NBW_MAMBA_CMD="mamba"
+# ----- ENV NBW_MAMBA_CMD="${NBW_MAMBA_CMD}"
 
-ARG NBW_PIP_CMD="pip"
-ENV NBW_PIP_CMD="${NBW_PIP_CMD}"
+# ----- ARG NBW_PIP_CMD="pip"
+# ----- ENV NBW_PIP_CMD="${NBW_PIP_CMD}"
 
-ARG NBW_OVERRIDE_ENV="base"
-ENV NBW_OVERRIDE_ENV="${NBW_OVERRIDE_ENV}"
+# ----- ARG NBW_OVERRIDE_ENV="base"
+# ----- ENV NBW_OVERRIDE_ENV="${NBW_OVERRIDE_ENV}"
 
-ARG NBW_WRANGLER_ENV="base"
-ENV NBW_WRANGLER_ENV="${NBW_WRANGLER_ENV}"
+# ----- ARG NBW_WRANGLER_ENV="base"
+# ----- ENV NBW_WRANGLER_ENV="${NBW_WRANGLER_ENV}"
 
 SHELL ["/bin/bash", "-c"]
 
@@ -30,6 +30,8 @@ SHELL ["/bin/bash", "-c"]
 # Install environments
 
 USER root
+RUN rm -f /opt/conda/conda-meta/conda-meta.lock
+
 RUN mkdir -p ${NBW_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBW_ROOT} && \
     mkdir -p ${NBW_PANTRY} && chown -R ${NB_UID}:${NB_GID} ${NBW_PANTRY}
 
@@ -56,8 +58,7 @@ RUN source /etc/nb-wrangler.rc && \
     rm -rf nb-wrangler
 
 RUN source /etc/nb-wrangler.rc && \
-    source /opt/tools/nb-wrangler environment && \
-    python -m nb_wrangler --verbose --validate-spec --install-packages \
+    python -m nb_wrangler --verbose --validate-spec --install-packages --compact \
            /opt/environments/nbw-wrangler-spec.yaml && \
     /opt/common-scripts/env-clean
 
