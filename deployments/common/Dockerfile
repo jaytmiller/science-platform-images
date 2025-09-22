@@ -36,8 +36,8 @@ ENV CONDA_VER=${CONDA_VER}
 ARG MAMBA_ROOT_PREFIX=/opt/conda
 ENV MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX}
 
-ARG CACHE_DIRS=""
-ENV CACHE_DIRS=${CACHE_DIRS}
+ARG USER_CACHE_DIRS=""
+ENV USER_CACHE_DIRS=${USER_CACHE_DIRS}
 
 # These are duplicated in jupyter/docker-stacks so need to be changed
 # in both locations.  Better than hard coding in scripts though.
@@ -49,7 +49,7 @@ ENV NB_GID=100
 
 USER root
 
-RUN for DIR in ${CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
+RUN for DIR in ${USER_CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
 
 # ------------------------------------------------------------------------
 # Breaking into separate runs will build slower but also defines storage
@@ -173,7 +173,7 @@ COPY --chown=${NB_UID}:${NB_GID} VERSION /opt
 COPY --chown=${NB_UID}:${NB_GID} HASH /opt
 
 USER root
-RUN for DIR in ${CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
+RUN for DIR in ${USER_CACHE_DIRS};  do mkdir -p ${DIR}; chown -R $NB_UID:$NB_GID ${DIR}; done
 
 RUN chown -R ${NB_UID}:${NB_GID} $HOME /opt/conda && \
     fix-permissions $HOME /opt/conda

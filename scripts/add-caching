@@ -18,5 +18,5 @@ def add_mounts_to_run(dockerfile, mount_dirs):
 
 
 if __name__ == "__main__":
-    cache_dirs = os.environ.get("CACHE_DIRS").split() or sys.argv[2:]
+    cache_dirs = os.environ.get("USER_CACHE_DIRS").split() or sys.argv[2:]
     add_mounts_to_run(sys.argv[1], cache_dirs)

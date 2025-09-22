@@ -21,7 +21,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -f --yes --fix-missing  ${PACKAGE
 # These dirs are not cached by buildkit as we configure it
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-if [ -z "${CACHE_DIRS}" ]; then
+if [ -z "${USER_CACHE_DIRS}" ]; then
     echo "-------------------------------------------------------------------------------"
     echo "===== Cleaning up apt cache..."
     apt clean

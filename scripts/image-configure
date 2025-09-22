@@ -49,7 +49,7 @@ def create_setup_env_file(args) -> None:
         content = re.sub(r"BASE_NOTEBOOK=.+", f"BASE_NOTEBOOK={args.base_notebook}", content)
 
     if args.no_docker_caching:
-        content += "\nexport CACHE_DIRS=''\n"
+        content += "\nexport USER_CACHE_DIRS=''\n"
 
     with open("setup-env", "w+") as file:
         file.write(content)
@@ -101,7 +101,7 @@ def main():
     parser.add_argument(
         "--no-docker-caching",
         action="store_true",
-        help="Don't use the per-RUN Docker daemon build caches defined by CACHE_DIRS.  Set CACHE_DIRS to ''.",
+        help="Don't use the per-RUN Docker daemon build caches defined by USER_CACHE_DIRS.  Set USER_CACHE_DIRS to ''.",
     )
     parser.add_argument(
         "--cal-version",

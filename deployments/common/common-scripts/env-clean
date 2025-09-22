@@ -3,7 +3,7 @@
 set -e
 
 # When buildkit caching or development mode are enabled, don't clear the cache
-if [ -z "${CACHE_DIRS}" ]; then
+if [ -z "${USER_CACHE_DIRS}" ]; then
     echo "-------------------------------------------------------------------------------"
     echo "===== Cleaning up conda env..."
     . /etc/profile.d/conda.sh
