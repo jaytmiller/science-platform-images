@@ -3,7 +3,19 @@ on:
    schedule: # weekly
      - cron: '0 0 * * 0'
    push:
+      branches:
+        - main
+      paths:
+        - ! "nbw-spec-archive/**"
+      paths-ignore:
+        - "nbw-spec-archive/**"
    pull_request:
+      branches:
+        - main
+      paths:
+        - ! "nbw-spec-archive/**"
+      paths-ignore:
+        - "nbw-spec-archive/**"
    workflow_dispatch:
 
 jobs:
