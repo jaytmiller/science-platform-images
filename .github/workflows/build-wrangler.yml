@@ -108,34 +108,16 @@ jobs:
             docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID}
             docker push $GITHUB_IMAGE_ID
 
-      # ----- - name: Image Repack Slim   (XXXX runs out of disk space)
-      # -----   shell: bash
-      # -----   run: |
-      # sudo apt-get install gh skopeo
-      # wget https://github.com/orf/docker-repack/releases/download/v0.5.0/docker-repack-Linux-x86_64.tar.gz
-      # tar zxf docker-repack-Linux-x86_64.tar.gz
-      # chmod +x docker-repack
-      # mv docker-repack scripts
-      # -----       source setup-env
-      # -----       image-repack $NOTEBOOK_ID
-
-      # ----- - name: Slim Image Push
-      # -----   shell: bash
-      # -----   run: |
-      # -----       export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
-      # -----       export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)
-      # -----       export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
-      # -----       export GITHUB_IMAGE_ID_SLIM=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}-slim.yaml
-      # -----       docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID_SLIM}
-      # -----       docker push ${GITHUB_IMAGE_ID_SLIM}
-
-      # XXXX Trivy missing config to run from built image, fails
-      # ----- - name: Run Trivy vulnerability scanner on image
-      # -----   uses: aquasecurity/trivy-action@master
-      # -----   with:
-      # -----     scan-type: image
-      # -----     image-ref: notebook-${{ matrix.DEPLOYMENT_NAME }}
-      # -----     ignore-unfixed: true
-      # -----     format: table
-      # -----     vuln-type: os,library
-      # -----     severity: 'CRITICAL,HIGH,MEDIUM'
+       # strictly speaking in prod we shold scan before pushing,  this is for trivy testing
+      - name: Run Trivy vulnerability scanner
+        shell: bash
+        run: |
+          source setup-env
+          export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
+          export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)
+          export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
+          export GITHUB_UNTAGGED_ID=ghcr.io/${{ github.repository }}
+          export GITHUB_IMAGE_ID=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}
+          docker tag ${BUILT_IMAGE_HASH} ${GITHUB_IMAGE_ID}
+          docker push $GITHUB_IMAGE_ID
+          image-scan  $GITHUB_IMAGE_ID
