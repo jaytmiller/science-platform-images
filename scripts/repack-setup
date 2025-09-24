@@ -4,7 +4,7 @@ set -eu
 
 cd $JUPYTERHUB_DIR/scripts
 
-if [[ "$(which skopeo)" == "" ]; then
+if [[ "$(which skopeo)" == "" ]]; then
     echo "skopeo missing,  installing in scripts directory"
     case $(uname) in
          Linux)
@@ -21,7 +21,7 @@ if [[ "$(which skopeo)" == "" ]; then
 fi
 
 
-if [[ "$(which docker-repack)" == "" ]; then
+if [[ "$(which docker-repack)" == "" ]]; then
     echo "docker-repack missing,  installing in scripts directory"
     case $(uname) in
          Linux)
