@@ -29,6 +29,5 @@ set -e
 
 cd /tmp
 
-source /opt/environments/nb-wrangler.rc
-source nb-wrangler environment
-nb-wrangler /opt/environments/nbw-wrangler-spec.yaml  --repos-dir /tmp/nb-wrangler --clone-repos --verbose --test
+source /etc/nb-wrangler.rc
+python -m nb_wrangler  /opt/environments/nbw-wrangler-spec.yaml  --repos-dir /tmp/nb-wrangler-test-clones --clone-repos --test  # --verbose
