@@ -9,28 +9,14 @@ ENV NBW_ROOT="${NBW_ROOT}"
 ARG NBW_PANTRY="${HOME}/.nbw-pantry"
 ENV NBW_PANTRY="${NBW_PANTRY}"
 
-# ----- ARG NBW_MM="/opt/conda"
-# ----- ENV NBW_MM="${NBW_MM}"
-
-# ----- ARG NBW_MAMBA_CMD="mamba"
-# ----- ENV NBW_MAMBA_CMD="${NBW_MAMBA_CMD}"
-
-# ----- ARG NBW_PIP_CMD="pip"
-# ----- ENV NBW_PIP_CMD="${NBW_PIP_CMD}"
-
-# ----- ARG NBW_OVERRIDE_ENV="base"
-# ----- ENV NBW_OVERRIDE_ENV="${NBW_OVERRIDE_ENV}"
-
-# ----- ARG NBW_WRANGLER_ENV="base"
-# ----- ENV NBW_WRANGLER_ENV="${NBW_WRANGLER_ENV}"
-
 SHELL ["/bin/bash", "--login", "-c"]
 
 # ----------------------------------------------------------------------
 # Install environments
 
 USER root
-RUN rm -f /opt/conda/conda-meta/conda-meta.lock
+RUN chown ${NB_UID}:${NB_GID} /opt/conda/conda-meta  && \
+    rm -f /opt/conda/conda-meta/conda-meta.lock
 
 RUN mkdir -p ${NBW_ROOT} && chown -R ${NB_UID}:${NB_GID} ${NBW_ROOT} && \
     mkdir -p ${NBW_PANTRY} && chown -R ${NB_UID}:${NB_GID} ${NBW_PANTRY}

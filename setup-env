@@ -17,7 +17,7 @@ export USE_FROZEN=0                  # use 0 for loosely pinned package versions
 
 export FREEZE=0                     # dump new frozen requirements in image to modified files in this git repo
 
-export REPACK=1                     # repack the image to reduce size
+export REPACK=0                     # repack the image to reduce size
 
 export PLATFORM=linux/amd64
 
