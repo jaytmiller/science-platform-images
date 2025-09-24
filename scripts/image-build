@@ -37,10 +37,6 @@ function repack {
         docker image ls
         repack-image ${image}
         docker image ls
-        docker image rm ${image}
-        docker tag ${image}-slim ${image}
-        docker image rm ${image}-slim
-        docker image ls
     fi
 }
 

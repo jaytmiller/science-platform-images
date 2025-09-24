@@ -21,6 +21,8 @@ cd temp-repack
 # Export the image from Docker daemon to a tar archive
 echo "Exporting $IMAGE_ID from Docker daemon..."
 docker save "$IMAGE_ID" -o "${IMAGE_ID//:/_}.tar"
+docker image rm "$IMAGE_ID"
+docker system prune -f
 
 # Convert the Docker image to OCI format using skopeo
 echo "Converting ${IMAGE_ID//:/_}.tar to OCI format..."
@@ -36,7 +38,6 @@ rm -rf "${IMAGE_ID//:/_}-fat.oci.tar"
 echo "Converting ${IMAGE_ID//:/_}-slim.oci.tar from OCI to Docker format..."
 skopeo copy "oci:${IMAGE_ID//:/_}-slim.oci.tar" "docker-archive:${IMAGE_ID//:/_}-slim.docker.tar"
 rm -rf "${IMAGE_ID//:/_}-slim.oci.tar"
-docker image rm "$IMAGE_ID"
 
 # Load the revised archive back into the Docker daemon with .slim suffix
 echo "Loading ${IMAGE_ID//:/_}.slim.docker.tar into Docker daemon as $IMAGE_ID-slim..."
