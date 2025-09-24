@@ -24,8 +24,11 @@ if [[ "$(which trivy)" == "" ]]; then
         curl -Ls micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
         MAMBA=bin/micromamba
         AGREE_TO_INSTALL="--yes"
-        chmod +x $MAMBA
+        chmod +x ${MAMBA}
         eval "$(bin/micromamba shell hook --shell bash)"
+        ${MAMBA} config append channels conda-forge
+        ${MAMBA} config set channel_priority strict
+        ${MAMBA} self-update
     fi
     ${MAMBA} install ${AGREE_TO_INSTALL} trivy
 fi
