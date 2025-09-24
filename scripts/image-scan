@@ -16,10 +16,10 @@ if [[ "$(which trivy)" == "" ]]; then
     echo "The 'trivy' scanner program is not installed,  installing."
     if [[ "$(which micromamba)" != "" ]]; then
         MAMBA=micromamba
-    # elif [[ "$(which mamba)" != "" ]]; then
-    #     MAMBA=mamba
-    #  elif [[ "$(which conda)" != "" ]]; then
-    #     MAMBA=conda
+    elif [[ "$(which mamba)" != "" ]]; then
+        MAMBA=mamba
+    elif [[ "$(which conda)" != "" ]]; then
+        MAMBA=conda
     else
         curl -Ls micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
         MAMBA=bin/micromamba
