@@ -42,7 +42,7 @@ docker image rm "$IMAGE_ID"
 echo "Loading ${IMAGE_ID//:/_}.slim.docker.tar into Docker daemon as $IMAGE_ID-slim..."
 LOADED_HASH=$(docker load -i "${IMAGE_ID//:/_}-slim.docker.tar" | cut -d ':' -f 3)
 echo ${LOADED_HASH}
-docker image tag ${LOADED_HASH}  ${IMAGE_ID}-slim
+docker image tag ${LOADED_HASH}  ${IMAGE_ID}
 
 # Cleanup (optional, be careful with this part)
 echo "Cleaning up temporary files..."
