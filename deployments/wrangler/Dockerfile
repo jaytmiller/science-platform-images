@@ -58,7 +58,7 @@ RUN source /opt/common-scripts/env-activate base && \
     rm -rf nb-wrangler
 
 RUN source /opt/common-scripts/env-activate base && \
-    python -m nb_wrangler --verbose --validate-spec --install-packages --compact \
+    python -m nb_wrangler --verbose --reinstall --compact \
            /opt/environments/nbw-wrangler-spec.yaml && \
     /opt/common-scripts/env-clean
 
