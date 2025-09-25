@@ -31,3 +31,4 @@ cd /tmp
 
 source /etc/nb-wrangler.rc
 python -m nb_wrangler  /opt/environments/nbw-wrangler-spec.yaml  --repos-dir /tmp/nb-wrangler-test-clones --clone-repos --test  # --verbose
+rm -rf /tmp/nb-wrangler-test-clones
