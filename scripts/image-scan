@@ -18,8 +18,6 @@ if [[ "$(which trivy)" == "" ]]; then
         MAMBA=micromamba
     elif [[ "$(which mamba)" != "" ]]; then
         MAMBA=mamba
-    elif [[ "$(which conda)" != "" ]]; then
-        MAMBA=conda
     else
         echo "Installing micromamba first to host trivy..."
         curl -Ls micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
@@ -31,7 +29,7 @@ if [[ "$(which trivy)" == "" ]]; then
         ${MAMBA} config set channel_priority strict
         ${MAMBA} self-update
     fi
-    ${MAMBA} install ${AGREE_TO_INSTALL} trivy
+    ${MAMBA} install -c conda-forge ${AGREE_TO_INSTALL} trivy
 fi
 
 
