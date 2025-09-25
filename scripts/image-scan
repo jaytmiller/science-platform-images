@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -ex
+set -e
 
 # If desired,  $1 can override the default image type
 export IMAGE_ID=${1:-${NOTEBOOK_ID}}
@@ -21,6 +21,7 @@ if [[ "$(which trivy)" == "" ]]; then
     elif [[ "$(which conda)" != "" ]]; then
         MAMBA=conda
     else
+        echo "Installing micromamba first to host trivy..."
         curl -Ls micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
         MAMBA=bin/micromamba
         AGREE_TO_INSTALL="--yes"
