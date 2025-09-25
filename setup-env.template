@@ -17,7 +17,10 @@ export USE_FROZEN=0                  # use 0 for loosely pinned package versions
 
 export FREEZE=0                     # dump new frozen requirements in image to modified files in this git repo
 
-export REPACK=0                     # repack the image to reduce size
+export REPACK=0                     # repack the image to reduce size;  experimental, not recommended for ops
+                                    # due to hard-to-debug or avoid crashes based on exact properties of
+                                    # Docker layering discussed more here:
+# https://www.perplexity.ai/search/trying-to-load-a-repacked-dock-NKu4SvlYTTq0uaram38D0w#0
 
 export PLATFORM="linux/amd64"       # os / instruction-set for built image: linux/amd64 or linux/aarch64
 

@@ -2,6 +2,12 @@
 
 set -eux
 
+# This is currently unreliable due to known process issues discussed here:
+#  https://www.perplexity.ai/search/trying-to-load-a-repacked-dock-NKu4SvlYTTq0uaram38D0w#0
+#
+# So until remedied,  let REPACK default to 0.
+#
+
 # Check for required tools
 if ! command -v skopeo &> /dev/null || ! command -v docker-repack &> /dev/null || ! command -v docker &> /dev/null; then
   echo "Error: Required tools (skopeo, docker-repack, docker) are missing!"
