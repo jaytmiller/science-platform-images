@@ -46,6 +46,7 @@ RUN source /opt/common-scripts/env-activate base && \
 RUN source /opt/common-scripts/env-activate base && \
     python -m nb_wrangler --verbose --reinstall --compact \
            /opt/environments/nbw-wrangler-spec.yaml && \
+    fix-permissions ${NBW_ROOT} ${NBW_PANTRY} /opt/conda && \
     /opt/common-scripts/env-clean
 
 # Suppress tensorflow warnings by default, ERROR and up only
