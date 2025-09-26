@@ -74,10 +74,10 @@ if [ $? -ne 0 ]; then
     OUTPUT=$(f_trivy --ignore-unfixed)
     if [ $? -ne 0 ]; then
         annotated_echo "===> Trivy scan FAILED with --ignore-unfixed."
-        echo "hasunfixed" >/tmp/trivy-tag
+        echo "hasfixed" >/tmp/trivy-tag
     else
         annotated_echo "===> Trivy scan PASSED with --ignore-unfixed."
-        echo "hasfixed" >/tmp/trivy-tag
+        echo "hasunfixed" >/tmp/trivy-tag
     fi
 else
     echo "===> Trivy scan PASSED even w/o --ignore-unfixed."
