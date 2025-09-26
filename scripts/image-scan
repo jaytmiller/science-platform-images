@@ -12,6 +12,8 @@ printenv | sort
 
 export DOCKER_BUILDKIT=1
 
+TRIVY=trivy
+
 if [[ "$(which trivy)" == "" ]]; then
     echo "The 'trivy' scanner program is not installed,  installing."
     if [[ "$(which micromamba)" != "" ]]; then
@@ -30,6 +32,7 @@ if [[ "$(which trivy)" == "" ]]; then
         ${MAMBA} self-update
     fi
     ${MAMBA} install -c conda-forge ${AGREE_TO_INSTALL} trivy
+    TRIVY=/home/runner/.local/share/mamba/bin/trivy
 fi
 
 
@@ -37,7 +40,7 @@ fi
 
 # docker run -v /var/run/docker.sock:/var/run/docker.sock \
 #       public.ecr.aws/aquasecurity/trivy:latest \
-trivy  image ${IMAGE_ID} \
+${TRIVY}  image ${IMAGE_ID} \
        --timeout 30m \
        --severity HIGH,CRITICAL \
        --scanners vuln \
