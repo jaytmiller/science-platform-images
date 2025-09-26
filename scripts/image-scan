@@ -43,7 +43,7 @@ fi
 function f_trivy {
     CLI_PARAMS=$@
     if [[ $WHERE == "on-github" ]]; then
-        GH_PARAMS="--no-progress-bar"
+        GH_PARAMS="--no-progress"
     else
         GH_PARAMS=""
     fi
