@@ -5,8 +5,7 @@ set -e
 # If desired,  $1 can override the default image type
 export IMAGE_ID=${1:-${NOTEBOOK_ID}}
 export AGREE_TO_INSTALL=${2:-""}
-
-printenv | sort
+export WHERE=${3:-""}
 
 # image-login
 
@@ -40,9 +39,49 @@ fi
 
 # docker run -v /var/run/docker.sock:/var/run/docker.sock \
 #       public.ecr.aws/aquasecurity/trivy:latest \
-${TRIVY}  image ${IMAGE_ID} \
+
+function f_trivy {
+    PARAMS=$@
+    ${TRIVY}  image ${IMAGE_ID} \
+       ${PARAMS} \
        --timeout 30m \
        --severity HIGH,CRITICAL \
        --scanners vuln \
        --pkg-types os,library \
        --exit-code 1
+    return $?
+}
+
+function annotated_echo {
+    if [[ $WHERE == "on-github" ]]; then
+        ANN_PREFIX="::warning "
+        echo "::warning $*"
+    else
+        echo "$*"
+    fi
+}
+
+echo "scanfailed" >/tmp/trivy-tag   # this may be impossible but just in case
+
+set -o pipefail         # do not stop if f_trivy fails in a pipe
+set +e                  # do not stop on error
+
+# Run Trivy and suppress initial output until Legend: is seen
+f_trivy | awk '/^Legend:/ {found=1} found {print}'
+
+if [ $? -ne 0 ]; then
+    annotated_echo "===> Trivy scan FAILED w/o --ignore-unfixed."
+    OUTPUT=$(f_trivy --ignore-unfixed)
+    if [ $? -ne 0 ]; then
+        annotated_echo "===> Trivy scan FAILED with --ignore-unfixed."
+        echo "hasunfixed" >/tmp/trivy-tag
+    else
+        annotated_echo "===> Trivy scan PASSED with --ignore-unfixed."
+        echo "hasfixed" >/tmp/trivy-tag
+    fi
+else
+    echo "===> Trivy scan PASSED even w/o --ignore-unfixed."
+    echo "scanok" >/tmp/trivy-tag
+fi
+
+exit 0
