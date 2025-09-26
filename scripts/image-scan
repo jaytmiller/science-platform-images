@@ -41,9 +41,15 @@ fi
 #       public.ecr.aws/aquasecurity/trivy:latest \
 
 function f_trivy {
-    PARAMS=$@
+    CLI_PARAMS=$@
+    if [[ $WHERE == "on-github" ]]; then
+        GH_PARAMS="--no-progress-bar"
+    else
+        GH_PARAMS=""
+    fi
     ${TRIVY}  image ${IMAGE_ID} \
-       ${PARAMS} \
+       ${CLI_PARAMS} \
+       ${GH_PARAMS} \
        --timeout 30m \
        --severity HIGH,CRITICAL \
        --scanners vuln \
