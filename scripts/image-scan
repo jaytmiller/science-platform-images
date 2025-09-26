@@ -30,7 +30,7 @@ if [[ "$(which trivy)" == "" ]]; then
         ${MAMBA} config set channel_priority strict
         ${MAMBA} self-update
     fi
-    ${MAMBA} install -c conda-forge ${AGREE_TO_INSTALL} trivy
+    ${MAMBA} install --quiet -c conda-forge ${AGREE_TO_INSTALL} trivy
     TRIVY=/home/runner/.local/share/mamba/bin/trivy
 fi
 
