@@ -97,23 +97,17 @@ jobs:
       - name: Run Trivy vulnerability scanner
         shell: bash
         run: |
+          set -o pipefail
           source setup-env
           export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
           export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)
           export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
-          export GITHUB_UNTAGGED_ID=ghcr.io/${{ github.repository }}
-          export GITHUB_IMAGE_ID=${GITHUB_UNTAGGED_ID}:${GITHUB_TAG}
-          image-scan  $GITHUB_IMAGE_ID  --yes  on-github   # writes to /tmp/trivy-tag
-          # only fails on scanning script errors, not HIGH or CRITICALS
-          # which result in:  hasfixed, hasunfixed, scanok
+          image-scan  $BUILD_IMAGE_HASH --yes  on-github   # writes to /tmp/trivy-tag
 
       - name: Image Push
         shell: bash
         run: |
             set -o pipefail
-            set -x
-            # source setup-env
-            df -h
             export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
             export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)-$(cat /tmp/trivy-tag)
             export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
