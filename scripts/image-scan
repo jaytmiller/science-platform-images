@@ -4,8 +4,7 @@ set -e
 
 # If desired,  $1 can override the default image type
 export IMAGE_ID=${1:-${NOTEBOOK_ID}}
-export AGREE_TO_INSTALL=${2:-""}
-export WHERE=${3:-""}
+export WHERE=${2:-""}
 
 # image-login
 
@@ -23,7 +22,6 @@ if [[ "$(which trivy)" == "" ]]; then
         echo "Installing micromamba first to host trivy..."
         curl -Ls micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
         MAMBA=bin/micromamba
-        AGREE_TO_INSTALL="--yes"
         chmod +x ${MAMBA}
         eval "$(bin/micromamba shell hook --shell bash)"
         ${MAMBA} config append channels conda-forge
