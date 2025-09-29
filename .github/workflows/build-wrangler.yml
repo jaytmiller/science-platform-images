@@ -99,10 +99,7 @@ jobs:
         run: |
           set -o pipefail
           source setup-env
-          export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
-          export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)
-          export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
-          image-scan  $BUILD_IMAGE_HASH  on-github   # writes to /tmp/trivy-tag
+          image-scan  notebook-wrangler  on-github   # writes to /tmp/trivy-tag
 
       - name: Image Push
         shell: bash
