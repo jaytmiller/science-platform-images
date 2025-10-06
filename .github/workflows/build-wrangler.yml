@@ -105,7 +105,7 @@ jobs:
         shell: bash
         run: |
             set -o pipefail
-            export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | head -1)
+            export NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
             export GITHUB_TAG=$(basename ${NBW_WRANGLER_SPEC} .yaml)-$(cat /tmp/trivy-tag)
             export BUILT_IMAGE_HASH=$(docker image ls | head -2 | awk '{print $3;}' | tail -1)
             export GITHUB_UNTAGGED_ID=ghcr.io/${{ github.repository }}
