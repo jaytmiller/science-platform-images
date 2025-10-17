@@ -47,15 +47,9 @@ rm -f astropy lightkurve
 ln -s $HOME/.astropy/cache  astropy
 ln -s $HOME/.lightkurve/cache  lightkurve
 
-notebook_repos=$(yq -y --indentless .out.notebook_repo_urls /opt/environments/nbw-wrangler-spec.yaml | cut -d' ' -f2)
-for repo in ${notebook_repos}; do
-    out=$(basename $repo | perl -p -e's/.git//g')
-    /opt/common-scripts/git-sync-v4 ${repo} main ${HOME}/references/${out}-ref
-done
+/opt/common-scripts/wrangler-sync-notebooks
 
-source /etc/nb-wrangler.rc
-source nb-wrangler environment
-nb-wrangler /opt/environments/nbw-wrangler-spec.yaml --register-env
+/opt/common-scripts/wrangler-register-env
 
 # make sure the script does not fail blocking spawn.
 exit 0
