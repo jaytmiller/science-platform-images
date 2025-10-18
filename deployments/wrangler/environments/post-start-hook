@@ -49,7 +49,7 @@ ln -s $HOME/.lightkurve/cache  lightkurve
 
 /opt/common-scripts/wrangler-sync-notebooks
 
-/opt/common-scripts/wrangler-register-env
+/opt/common-scripts/wrangler-register-kernel
 
 # make sure the script does not fail blocking spawn.
 exit 0

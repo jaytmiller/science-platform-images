@@ -56,8 +56,11 @@ build_jh  base-notebook     --build-arg BASE_IMAGE=${OWNER}/docker-stacks-founda
 
 build_jh  minimal-notebook  --build-arg BASE_IMAGE=${OWNER}/base-notebook:latest
 
-if [[ BASE_NOTEBOOK == "scipy-notebook" ]]; then
+if [[ "${BASE_NOTEBOOK}" = "scipy-notebook" ]]; then
     build_jh  scipy-notebook    --build-arg BASE_IMAGE=${OWNER}/minimal-notebook:latest
 fi
 
-docker system prune --force
+# If running on github,  prune Docker to free resources for follow-on steps
+if [[ -v GITHUB_RUN_ID ]]; then
+    docker system prune --force
+fi
