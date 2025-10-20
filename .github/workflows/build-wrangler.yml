@@ -90,7 +90,7 @@ jobs:
         run: |
            df -h
            source setup-env
-           scripts/image-test
+           scripts/image-test  --test-imports  # only test imports pending data installs and/or adequate GH resources
            df -h
 
        # strictly speaking in prod we shold scan before pushing,  this is for trivy testing
