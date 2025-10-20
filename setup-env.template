@@ -37,7 +37,6 @@ export OWNER="spacetelescope"
 # export OWNER="quay.io/jupyter"
 
 export BASE_NOTEBOOK="scipy-notebook"  # minimal-notebook
-
 export BASE_IMAGE=${OWNER}/${BASE_NOTEBOOK}
 
 export NOTEBOOK_TAG=latest
@@ -55,6 +54,8 @@ export GITHUB_IMAGE_ID=${GITHUB_REG}/${GITHUB_ORG}/${GITHUB_REPO}:${GITHUB_TAG}
 export GITHUB_IMAGE_SLIM_ID=${GITHUB_IMAGE_ID}-slim
 
 export UBUNTU_TAG="24.04"            # # Image scanning,  report Ubuntu status for this version of Ubuntu
+
+export PYTHON_VERSION="3.11"
 
 # ----------------- vvvv less frequently changed vvvv -------------------------------
 

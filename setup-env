@@ -17,7 +17,10 @@ export USE_FROZEN=0                  # use 0 for loosely pinned package versions
 
 export FREEZE=0                     # dump new frozen requirements in image to modified files in this git repo
 
-export REPACK=0                     # repack the image to reduce size
+export REPACK=0                     # repack the image to reduce size;  experimental, not recommended for ops
+                                    # due to hard-to-debug or avoid crashes based on exact properties of
+                                    # Docker layering discussed more here:
+# https://www.perplexity.ai/search/trying-to-load-a-repacked-dock-NKu4SvlYTTq0uaram38D0w#0
 
 export PLATFORM=linux/amd64
 
@@ -34,7 +37,6 @@ export OWNER=spacetelescope
 # export OWNER=spacetelescope
 
 export BASE_NOTEBOOK=minimal-notebook
-
 export BASE_IMAGE=${OWNER}/${BASE_NOTEBOOK}
 
 export NOTEBOOK_TAG=latest
@@ -52,6 +54,8 @@ export GITHUB_IMAGE_ID=${GITHUB_REG}/${GITHUB_ORG}/${GITHUB_REPO}:${GITHUB_TAG}
 export GITHUB_IMAGE_SLIM_ID=${GITHUB_IMAGE_ID}-slim
 
 export UBUNTU_TAG="24.04"            # # Image scanning,  report Ubuntu status for this version of Ubuntu
+
+export PYTHON_VERSION="3.11"
 
 # ----------------- vvvv less frequently changed vvvv -------------------------------
 
