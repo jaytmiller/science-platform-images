@@ -63,7 +63,7 @@ jobs:
         run: |
              source setup-env
              NBW_WRANGLER_SPEC=$(find nbw-spec-archive/ -name "*.yaml" -type f | sort | tail -1)
-             python -m nb_wrangler ${NBW_WRANGLER_SPEC} --data-validate --verbose
+             python -m nb_wrangler ${NBW_WRANGLER_SPEC} --spec-validate --verbose
              cp -v ${NBW_WRANGLER_SPEC} deployments/wrangler/environments/nbw-wrangler-spec.yaml
 
       - name: Log in to GitHub Container Registry

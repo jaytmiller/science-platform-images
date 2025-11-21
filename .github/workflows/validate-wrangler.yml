@@ -102,7 +102,7 @@ jobs:
         shell: bash
         run: |
           cp /tmp/nbw-wrangler-spec.yaml .
-          python -m nb_wrangler nbw-wrangler-spec.yaml --data-validate --verbose
+          python -m nb_wrangler nbw-wrangler-spec.yaml --spec-validate --verbose
 
       # ========================= untrusted ==============================================
 
