@@ -44,7 +44,7 @@ RUN source /opt/common-scripts/env-activate base && \
     rm -rf nb-wrangler
 
 RUN source /opt/common-scripts/env-activate base && \
-    python -m nb_wrangler --verbose --reinstall --compact \
+    python -m nb_wrangler --verbose --reinstall --env-compact \
            /opt/environments/nbw-wrangler-spec.yaml && \
     fix-permissions ${NBW_ROOT} ${NBW_PANTRY} /opt/conda && \
     /opt/common-scripts/env-clean

@@ -14,4 +14,4 @@
 
 source /etc/nb-wrangler.rc
 source nb-wrangler environment
-nb-wrangler /opt/environments/nbw-wrangler-spec.yaml --register-env
+nb-wrangler /opt/environments/nbw-wrangler-spec.yaml --env-register
