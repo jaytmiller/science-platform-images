@@ -61,9 +61,7 @@ RUN   /opt/common-scripts/install-common  base
 
 # --------------------------- Jwebbinar -------------------------------------
 
-ENV JH_DEFAULT_KERNEL=jwebbinar
-
-# BASE
+    # BASE
 COPY --chown=${NB_UID}:${NB_GID} env-frozen/jwebbinar/ /opt/env-frozen/jwebbinar/
 COPY --chown=${NB_UID}:${NB_GID} environments/jwebbinar/*.yml /opt/environments/jwebbinar/
 RUN /opt/common-scripts/env-conda jwebbinar
