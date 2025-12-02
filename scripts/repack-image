@@ -5,7 +5,12 @@ set -eux
 cat <<EOF
 Repack-image is currently unreliable due to known process issues discussed here:
 
-https://www.perplexity.ai/search/trying-to-load-a-repacked-dock-NKu4SvlYTTq0uaram38D0w#0
+https://www.perplexity.ai/search/trying-to-load-a-repacked-dock-NKu4SvlYTTq0uaram38D0w#6
+
+An alternate approach to implementing which should have more robust packing is discussed
+here but requires additional work to preserve metadata:
+
+https://www.perplexity.ai/search/i-m-trying-to-create-a-scheme-eblg7KPeRbOd_RurhPzOxw#0
 
 Until it is remedied, REPACK'ing should be default'ed to 0.
 EOF
