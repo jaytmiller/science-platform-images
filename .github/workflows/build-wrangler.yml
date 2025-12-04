@@ -81,7 +81,7 @@ jobs:
            scripts/image-build
            df -h
            docker system df
-           docker system prune
+           docker system prune -f
            docker image ls
            df -h
 
@@ -91,7 +91,9 @@ jobs:
            df -h
            source setup-env
            scripts/image-test  --test-imports  # only test imports pending data installs and/or adequate GH resources
+           docker system prune -f
            df -h
+
 
        # strictly speaking in prod we shold scan before pushing,  this is for trivy testing
       - name: Run Trivy vulnerability scanner
