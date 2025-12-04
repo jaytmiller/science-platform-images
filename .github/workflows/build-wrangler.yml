@@ -56,7 +56,7 @@ jobs:
         run: |
           git config --global user.email "dmd_octarine@stsci.edu"
           git config --global user.name "Wrangler workflow"
-          scripts/image-configure wrangler --use-frozen 0 --freeze 0 --base-notebook minimal-notebook --repack 0
+          scripts/image-configure wrangler --use-frozen 0 --freeze 0 --base-notebook minimal-notebook --repack 1
 
       - name: Validate Spec
         shell: bash
@@ -79,20 +79,12 @@ jobs:
            df -h
            source setup-env
            scripts/image-build
-           docker rmi notebook-common
            df -h
            docker system df
            docker system prune
            docker image ls
            df -h
-           [[ ${REPACK} == 0 ]] || scripts/image-repack notebook-wrangler notebook-wrangler-slim --delete-source
-           docker image tag notebook-wrangler-slim notebook-wrangler
-           df -h
-           docker system df
-           docker system prune
-           docker image ls
-           df -h
-           
+
       - name: Image Functional Tests
         shell: bash
         run: |

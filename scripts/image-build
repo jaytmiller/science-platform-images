@@ -35,7 +35,8 @@ function repack {
     if [[ "$REPACK" == "1" ]]; then
         echo "Repacking image to reduce size."
         docker image ls
-        repack-image ${image}
+        image-repack ${image} ${image}-slim --delete-source
+        docker tag ${image}-slim ${image}
         docker image ls
     fi
 }
@@ -72,6 +73,9 @@ time docker build \
      --build-arg BASE_IMAGE=notebook-common \
      --file Dockerfile.cached .
 rm Dockerfile.cached
+
+docker rmi notebook-common
+docker rmi notebook-common-slim
 
 # ..................................................................................
 # In a Dockerfile which is not using RUN cache, touch up all the cache
