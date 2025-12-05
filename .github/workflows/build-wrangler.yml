@@ -106,7 +106,7 @@ jobs:
           echo "Running Docker cleanup and removing large directories..."
           sudo rm -rf /usr/share/dotnet
           docker builder prune --all --force
-          docker system prune --all --force
+          docker system prune --force
           echo "Space after cleanup:"
           df -h
           docker system df
