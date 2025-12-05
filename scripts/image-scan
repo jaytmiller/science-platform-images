@@ -52,6 +52,8 @@ function f_trivy {
        --severity HIGH,CRITICAL \
        --scanners vuln \
        --pkg-types os,library \
+       --parallel 1 \
+       --slow \
        --exit-code 1
     return $?
 }
