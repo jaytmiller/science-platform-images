@@ -37,6 +37,7 @@ function repack {
         docker image ls
         image-repack ${image} ${image}-slim --delete-source
         docker tag ${image}-slim ${image}
+        docker rmi ${image}-slim
         docker image ls
     fi
 }
@@ -57,6 +58,7 @@ time docker build \
        --file Dockerfile.cached  .
 rm Dockerfile.cached
 
+docker rmi ${BASE_IMAGE}
 repack notebook-common
 
 # ..................................................................................
@@ -75,7 +77,6 @@ time docker build \
 rm Dockerfile.cached
 
 docker rmi notebook-common
-docker rmi notebook-common-slim
 
 # ..................................................................................
 # In a Dockerfile which is not using RUN cache, touch up all the cache
