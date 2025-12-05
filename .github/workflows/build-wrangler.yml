@@ -25,10 +25,12 @@ jobs:
              docker rmi ${existing_images}
           fi
           docker container prune -f
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"  # can free tens of GB but may break any setup-* actions that rely on it
+          sudo rm -rf "/usr/local/share/boost"   # Boost libraries, typically 2–3 GB
           sudo rm -rf /usr/local/lib/android # will release about 10 GB if you don't need Android
           sudo rm -rf /usr/share/dotnet # will release about 20GB if you don't need .NET
+          sudo rm -rf /opt/hostedtoolcache/CodeQL # CodeQL bundle, several GB.
+          sudo rm -rf /opt/ghc  # GHC (Haskell) toolchains, roughly a few GB.​
           sudo swapoff -a
           sudo rm -f /swapfile
           sudo fallocate -l 16G /swapfile
