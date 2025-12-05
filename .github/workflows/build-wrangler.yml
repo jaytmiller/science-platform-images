@@ -95,6 +95,20 @@ jobs:
            df -h
 
 
+      - name: Free Up Disk Space Before Scan
+        shell: bash
+        run: |
+          echo "Space before cleanup:"
+          df -h
+          docker system df
+          echo "Running Docker cleanup and removing large directories..."
+          sudo rm -rf /usr/share/dotnet
+          docker builder prune --all --force
+          docker system prune --all --force
+          echo "Space after cleanup:"
+          df -h
+          docker system df
+
        # strictly speaking in prod we shold scan before pushing,  this is for trivy testing
       - name: Run Trivy vulnerability scanner
         shell: bash
