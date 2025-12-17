@@ -34,18 +34,18 @@ RUN   /opt/common-scripts/install-common  base
 WORKDIR ${NBW_ROOT}
 
 # Install wrangler directly in base environment
-RUN source /opt/common-scripts/env-activate base && \
-    git clone https://github.com/spacetelescope/nb-wrangler && \
-    cd nb-wrangler && \
-    pip install . && \
-    cp nb-wrangler /opt/tools && \
-    cd .. && \
-    /opt/common-scripts/env-clean && \
-    rm -rf nb-wrangler
+# ----- RUN source /opt/common-scripts/env-activate base && \
+# -----     git clone https://github.com/spacetelescope/nb-wrangler && \
+# -----     cd nb-wrangler && \
+# -----     pip install . && \
+# -----     cp nb-wrangler /opt/tools && \
+# -----     cd .. && \
+# -----     /opt/common-scripts/env-clean && \
+# -----     rm -rf nb-wrangler
 
 RUN source /opt/common-scripts/env-activate base && \
-    python -m nb_wrangler --verbose --reinstall --env-compact \
-           /opt/environments/nbw-wrangler-spec.yaml && \
+    ( python -m nb_wrangler /opt/environments/nbw-wrangler-spec.yaml --verbose --reinstall >/opt/environments/nbw-exports.sh ) && \
+    ( python -m nb_wrangler /opt/environments/nbw-wrangler-spec.yaml --verbose --env-compact --delete-repos --data-print >/opt/environments/nbw-exports.sh ) && \
     fix-permissions ${NBW_ROOT} ${NBW_PANTRY} /opt/conda && \
     /opt/common-scripts/env-clean
 
