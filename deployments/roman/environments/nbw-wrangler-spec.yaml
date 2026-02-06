@@ -43,16 +43,16 @@ system:
   spi:
     repo: https://github.com/jaytmiller/science-platform-images.git
     ref: roman-20.0.0
-  spec_sha256: 394aa99e3062577dd822494241572e2478d77b7ce5e17198ef2580611eb43a70
+  spec_sha256: 7312669980a927e2a4e158b4046b3e4b12c1fa41c7e4bc60f667c1b589966121
 out:
   repositories:
     roman_notebooks:
       url: https://github.com/spacetelescope/roman_notebooks
-      ref: 637a50818fede71d890ccfcfa77c4a11a7144c0b
+      ref: 2ac08add11071ec7fdf6562d25f4094e4c68cd07
 
   spi:
     repo: https://github.com/jaytmiller/science-platform-images.git
-    ref: roman-20.0.0
+    ref: 28420cd511596f873b2eef0e51b0587be0124efb
   test_notebooks:
     references/roman_notebooks/notebooks/aperture_photometry/aperture_photometry.ipynb: 
       roman_all
