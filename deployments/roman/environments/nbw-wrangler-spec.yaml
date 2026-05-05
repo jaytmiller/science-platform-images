@@ -25,8 +25,8 @@ system:
   spi:
     repo: https://github.com/spacetelescope/science-platform-images.git
     ref: main
-  date_updated: '2026-05-04T20:28:42.488963'
-  spec_sha256: 3b77a9557bf66246de64f515c9a702ff2f4eefe51d75f52f919532a4ade102d3
+  date_updated: '2026-05-04T21:57:02.674601'
+  spec_sha256: fcf6d3a3e1edf5a873aad6d041e4ed4483ec83fe367c0145cab4051c3c285e6b
 
 selected_notebooks:
   roman_all:
@@ -189,7 +189,7 @@ out:
 
   spi:
     repo: https://github.com/jaytmiller/science-platform-images.git
-    ref: d105ae012ff2c17427c69ec2d188fde7e5213bb1
+    ref: 341b8e795bd7c6cf13bb3d6fed4cc8456ae42d85
   test_notebooks:
     references/roman_notebooks/notebooks/aperture_photometry/aperture_photometry.ipynb: 
       roman_all
@@ -496,26 +496,26 @@ out:
       - setuptools
       - wheel
   non_mamba_pip_package_files:
-    - references/roman_notebooks/notebooks/time_domain_simulations/requirements.txt
-    - references/roman_notebooks/notebooks/data_visualization/requirements.txt
-    - references/roman_notebooks/notebooks/measuring_galaxy_shapes/requirements.txt
-    - references/roman_notebooks/notebooks/grism_spectral_extraction/requirements.txt
-    - references/roman_notebooks/notebooks/rist/requirements.txt
-    - references/roman_notebooks/notebooks/roman_cutouts/requirements.txt
-    - references/roman_notebooks/notebooks/catalog_database_access/requirements.txt
-    - references/roman_notebooks/notebooks/mosaic_pipeline/requirements.txt
-    - references/roman_notebooks/notebooks/pandeia/requirements.txt
     - references/roman_notebooks/notebooks/stpsf/requirements.txt
-    - references/roman_notebooks/notebooks/aperture_photometry/requirements.txt
+    - references/roman_notebooks/notebooks/ground_test_analysis/requirements.txt
+    - references/roman_notebooks/notebooks/roman_cutouts/requirements.txt
     - references/roman_notebooks/notebooks/romanisim/requirements.txt
+    - references/roman_notebooks/notebooks/working_with_asdf/requirements.txt
+    - references/roman_notebooks/notebooks/grism_spectral_extraction/requirements.txt
+    - references/roman_notebooks/notebooks/catalog_database_access/requirements.txt
+    - references/roman_notebooks/notebooks/rist/requirements.txt
+    - references/roman_notebooks/notebooks/data_visualization/requirements.txt
+    - references/roman_notebooks/notebooks/pandeia/requirements.txt
+    - references/roman_notebooks/notebooks/exposure_pipeline/requirements.txt
+    - references/roman_notebooks/notebooks/measuring_galaxy_shapes/requirements.txt
+    - references/roman_notebooks/notebooks/aperture_photometry/requirements.txt
+    - references/roman_notebooks/notebooks/time_domain_simulations/requirements.txt
     - references/roman_notebooks/notebooks/stips/requirements.txt
+    - references/roman_notebooks/notebooks/background_visualization_tool/requirements.txt
+    - references/roman_notebooks/notebooks/mosaic_pipeline/requirements.txt
+    - references/roman_notebooks/notebooks/footprint_visualization/requirements.txt
     - references/roman_notebooks/notebooks/data_discovery_and_access/requirements.txt
     - references/roman_notebooks/notebooks/synphot/requirements.txt
-    - references/roman_notebooks/notebooks/working_with_asdf/requirements.txt
-    - references/roman_notebooks/notebooks/footprint_visualization/requirements.txt
-    - references/roman_notebooks/notebooks/background_visualization_tool/requirements.txt
-    - references/roman_notebooks/notebooks/ground_test_analysis/requirements.txt
-    - references/roman_notebooks/notebooks/exposure_pipeline/requirements.txt
     - references/science-platform-images/deployments/common/common-env/required.pip
     - references/science-platform-images/deployments/common/common-env/common.pip
     - references/science-platform-images/deployments/common/common-env/docs.pip
