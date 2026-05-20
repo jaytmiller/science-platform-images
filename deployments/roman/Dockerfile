@@ -28,8 +28,7 @@ COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
 
 # Optional Ubuntu packages if api-packages.txt is defined
 RUN [ -f /opt/environments/apt-packages.txt ] && \
-    apt-get update && \
-    apt-get install -v -y $(cat /opt/environments/apt-packages.txt) || \
+    /opt/common-scripts/apt-install $(cat /opt/environments/apt-packages.txt) || \
     echo "apt-packages.txt does not exist or failed to install."
 
 # Bash script for arbitrary commands
