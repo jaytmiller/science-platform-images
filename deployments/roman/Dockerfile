@@ -19,39 +19,30 @@ ENV PYTHONPATH="/srv/jupyter"
 
 USER root
 
+# ----------------------------------------------------------------------
+# Add jupyter-lab-extensions to base environment as well as standard packages.
+# Performing common update here enables mission specific frozen spec.
+
+COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
+
+RUN ls /opt/environments
+
 # Optional Ubuntu packages if api-packages.txt is defined
-RUN set -eu; \
-    if [ -f /opt/environments/apt-packages.txt ]; then \
-        apt-get update; \
-        xargs -r apt-get install -y < /opt/environments/apt-packages.txt; \
-        cat /opt/environments/apt-packages.txt; \
-        rm -rf /var/lib/apt/lists/*; \
-    else \
-        echo "apt-packages.txt does not exist, skipping custom apt install." \
-    fi
+RUN [ -f /opt/environments/apt-packages.txt ] && \
+    apt-get update && \
+    apt-get install -v -y $(cat /opt/environments/apt-packages.txt) || \
+    echo "apt-packages.txt does not exist or failed to install."
 
 # Bash script for arbitrary commands
-RUN set -eu; \
-    if [ -f /opt/environments/dockerfile-aux.sh ]; then \
-        cat /opt/environments/dockerfile-aux.sh; \
-        bash /opt/environments/dockerfile-aux.sh; \
-    else \
-       echo "dockerfile-aux.sh does not exist, skipping custom shell commands." \
-    fi
+RUN [ -f /opt/environments/dockerfile-aux.sh ] && \
+    bash /opt/environments/dockerfile-aux.sh || \
+    echo "dockerfile-aux.sh does not exist or failed to install."
 
 # ------------------------------------------------------------------------------
 # Install environments
 
 # All specs for frozen builds need to be available before their normal installs
 USER ${NB_UID}:${NB_GID}
-
-# ----------------------------------------------------------------------
-# Add jupyter-lab-extensions to base environment as well as standard packages.
-# Performing common update here enables mission specific frozen spec.
-
-COPY --chown=${NB_UID}:${NB_GID} env-frozen/base/  /opt/env-frozen/base/
-COPY --chown=${NB_UID}:${NB_GID} environments/common-hints.pip /opt/environments/common-hints.pip
-COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
 
 WORKDIR ${NBW_ROOT}
 # USER root
