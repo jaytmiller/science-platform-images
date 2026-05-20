@@ -24,13 +24,19 @@ RUN set -eu; \
     if [ -f /opt/environments/apt-packages.txt ]; then \
         apt-get update; \
         xargs -r apt-get install -y < /opt/environments/apt-packages.txt; \
+        cat /opt/environments/apt-packages.txt; \
         rm -rf /var/lib/apt/lists/*; \
+    else \
+        echo "apt-packages.txt does not exist, skipping custom apt install." \
     fi
 
 # Bash script for arbitrary commands
 RUN set -eu; \
     if [ -f /opt/environments/dockerfile-aux.sh ]; then \
+        cat /opt/environments/dockerfile-aux.sh; \
         bash /opt/environments/dockerfile-aux.sh; \
+    else \
+       echo "dockerfile-aux.sh does not exist, skipping custom shell commands." \
     fi
 
 # ------------------------------------------------------------------------------
