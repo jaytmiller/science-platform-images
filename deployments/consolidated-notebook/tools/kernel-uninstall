@@ -1,0 +1,19 @@
+#! /bin/bash
+
+# set -eu
+
+KERNEL_TOOLS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source  ${KERNEL_TOOLS}/kernel-utils
+
+# if no arguments, display usage and exit
+usage "$# -lt 1"  "<environment-name>" <<EOU
+Remove the JupyterLab kernel corresponding to the compute environment <environment-name>.
+The corresponding compute environment remains intact,  only its availability in JupyterLab is removed.
+EOU
+
+ENVNAME=$1
+
+
+banner "Removing kernel for environment ${ENVNAME} from JupyterLab."
+source ${KERNEL_TOOLS}/kernel-activate base  >& /dev/null
+jupyter kernelspec remove -y "${ENVNAME}"

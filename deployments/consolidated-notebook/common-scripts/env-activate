@@ -1,0 +1,18 @@
+#! /bin/bash
+
+# Undefined variables cause "random" failures during activation and deactivation,  first seen for TESS
+
+env=$1
+
+
+OLD_OPTS=$-
+set +u    # due to missing PS1,  etc.  turn off undefined var trapping
+
+source /etc/nb-wrangler.rc
+eval "$(mamba shell hook --shell ${KERNEL_SHELL})"
+${CONDA_VER} activate $env
+
+case $OLD_OPTS in
+  *u*) set -u ;;
+  *) set +u ;;
+esac

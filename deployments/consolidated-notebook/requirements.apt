@@ -1,8 +1,16 @@
 # Apt package list for the consolidated image, factored out of the Dockerfile.
 # One package per line; "#" starts a comment and blank lines are ignored.
 # The Dockerfile installs everything listed here in a single apt transaction.
-# Ordering preserves the original docker-stacks-foundation -> base-notebook ->
-# minimal-notebook section boundaries.
+#
+# This is the union of the package sets of docker-stacks-foundation,
+# base-notebook, and minimal-notebook (see the group headers below) and the
+# apt-install calls in science-platform-images deployments/common/Dockerfile,
+# deduplicated:
+#   - sudo is intentionally NOT installed: the common layer removed it ("hub
+#     users cannot use, security risk"), so here we simply never add it.
+#   - vim-tiny was replaced by full vim (the common layer installed vim).
+#   - ssh (metapackage) and openssh-client collapsed into openssh-server
+#     (which depends on openssh-client for git-over-ssh).
 
 # --- from docker-stacks-foundation ---
 ca-certificates
@@ -11,7 +19,6 @@ locales
 #   and required by various C functions like getservbyname and getprotobyname
 #   https://github.com/jupyter/docker-stacks/pull/2129
 netbase
-sudo
 # - `tini` is installed as a helpful container entrypoint,
 #   that reaps zombie processes and such of the actual executable we want to start
 #   See https://github.com/krallin/tini#why-tini for details
@@ -37,9 +44,6 @@ git
 nano-tiny
 tzdata
 unzip
-vim-tiny
-# git-over-ssh
-openssh-client
 # `less` is needed to run help in R
 # see: https://github.com/jupyter/docker-stacks/issues/1588
 less
@@ -50,3 +54,54 @@ texlive-fonts-recommended
 texlive-plain-generic
 # Enable clipboard on Linux host systems
 xclip
+
+# --- from common: base utilities ---
+apt-utils
+openssl
+vim
+
+# --- from common: misc system tools ---
+tree
+rsync
+groff
+htop
+sysstat
+net-tools
+rename
+stress-ng
+# GUI libraries (e.g. for headless browser / desktop-server use)
+libxcomposite1
+libxdamage1
+libgtk-3-0t64
+libatk1.0-0t64
+
+# --- from common: S/W development tools ---
+build-essential
+gfortran
+automake
+libtool
+make
+cmake
+emacs-nox
+libfftw3-dev
+libatlas-base-dev
+libcurl4-openssl-dev
+libxml2
+libxml2-dev
+libxslt1.1
+libxslt1-dev
+graphviz
+libopenblas-dev
+zlib1g-dev
+jq
+# git-over-ssh (openssh-server pulls in openssh-client)
+openssh-server
+
+# --- from common: libraries for FITS, DS9, ML ---
+file
+libcfitsio-bin
+libcfitsio-dev
+apt-file
+libxpa-dev
+libxt-dev
+libbz2-dev

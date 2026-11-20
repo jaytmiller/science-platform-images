@@ -31,3 +31,10 @@ nbclassic
 # That's why we have to pin the minimum notebook version.
 # More info: https://github.com/jupyter/docker-stacks/pull/2167
 notebook>=7.2.2
+
+# --- from common ---
+# The common layer installed the AWS CLI by downloading awscliv2.zip from
+# https://awscli.amazonaws.com; the consolidated image installs the equivalent
+# conda-forge package instead, so the build no longer depends on that external
+# URL and the package lands in the same lockable transaction as everything else
+awscli

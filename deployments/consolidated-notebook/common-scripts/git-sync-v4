@@ -1,0 +1,859 @@
+#! /usr/bin/env python
+"""git-sync-v4 exists primarily to maintain pristine copies of class materials such
+as jupyter notebooks which may be updated by the instructors very close to the class
+time.  As long as students log into the host system after the instructor commits
+their updates to git, git-sync-v4 will ensure that the student's copy is up to date.
+
+Because the sync'ed clone is intended as an up-to-date reference copy,  user changes
+are discouraged while attempting to do as little damage as possible.
+"""
+
+from collections.abc import Set as AbstractSet
+import os
+import sys
+import shutil
+import subprocess
+import argparse
+import tempfile
+import time
+from typing import List, Tuple, Union, Any  # AbstractSet, Dict, Optional
+from pathlib import PosixPath
+import traceback
+import cProfile
+import pstats
+
+import git
+
+# ===========================================================================================
+
+
+class Log:
+    def __init__(self, filename, level="INFO", mode="w+"):
+        self.filename = FilePath(os.path.abspath(filename))
+        self.level = level
+        self.mode = mode
+        self.handle = open(self.filename, self.mode, encoding="utf-8")
+
+    def set_level(self, level):
+        self.level = level
+
+    def log(self, level, *args):
+        message = " ".join(str(a) for a in args)
+        for handle in [sys.stdout, self.handle]:
+            print(level, "-", message, file=handle)
+            handle.flush()
+
+    def moveto(self, newfilepath):
+        newloc = FilePath(newfilepath)
+        # log.info("Moving log file to", newloc)
+        if newloc.exists():
+            newloc.unlink()
+        shutil.move(self.filename, newloc)
+
+    def clear(self):
+        os.remove(self.filename)
+
+    def debug(self, *args):
+        if self.level == "DEBUG":
+            self.log("DEBUG", *args)
+
+    def info(self, *args):
+        self.log("INFO", *args)
+
+    def warning(self, *args):
+        self.log("WARN", *args)
+
+    def error(self, *args):
+        self.log("ERROR", *args)
+
+    def critical(self, *args):
+        self.log("CRITICAL", *args)
+
+    def exception(self, *args, **keys):
+        tb = traceback.format_exc()
+        message = " ".join(str(a) for a in args)
+        self.error(f"{message}\n{tb.rstrip()}")
+
+
+_DELETED_MODES = frozenset({"deleted"})
+_USER_BACKUP_MODES = frozenset(
+    {
+        "untracked",
+        "modified",
+        "updated",  # but unmerged
+        "added",
+        "copied",
+        "renamed",
+        "typechange",
+    }
+)
+
+log = None
+
+# ===========================================================================================
+
+
+class SortedSet(set):
+    """Set subclass which repr's, str's, and iterates in sorted ordrer making
+    it more amenable to deterministic results and docstests.
+
+    Note that arithmetic operations on SortedSets generally work as sets and do
+    not automatically yeild a SortedSet.  Set differences do.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __repr__(self):
+        return f"SortedSet({list(self)})"
+
+    def __str__(self):
+        return repr(self)
+
+    def __iter__(self):
+        return iter(sorted(x for x in set.__iter__(self)))
+
+    def __sub__(self, other: AbstractSet[Any | None]):
+        return self.__class__(super().__sub__(other))
+
+    def __or__(self, other: AbstractSet[Any | None]):
+        return self.__class__(super().__or__(other))
+
+    def __and__(self, other: AbstractSet[Any | None]):
+        return self.__class__(super().__and__(other))
+
+    def __xor__(self, other: AbstractSet[Any | None]):
+        return self.__class__(super().__xor__(other))
+
+
+# ===========================================================================================
+
+
+class DirPath(PosixPath):
+    """A directory path."""
+
+    def __truediv__(self, other) -> "FileOrDirPath":
+        """Concatenate a path onto this DirPath, returning a new path object.
+        Handles various types of paths and ensures the returned path is the
+        appropriate DirPath or FilePath subclass instance.
+        """
+        # Normalize other to a string early so we only compute combined once
+        # and never re-enter __truediv__, avoiding recursion hazards with bare
+        # PosixPath inputs. Preserve: DirPath/FilePath, isdir/isfile detection, str fallback.
+        if isinstance(other, (DirPath, FilePath)):
+            other_str = str(other)
+            child_cls = type(other)
+        else:
+            other_str = str(other)
+            child_cls = None
+
+        combined = f"{str(self)}/{other_str}"
+
+        if child_cls is not None:
+            return child_cls(combined)
+        elif isinstance(other, PosixPath):
+            # Bare PosixPath: defer filesystem check to avoid surprises with
+            # absolute paths or trailing separators; default to DirPath.
+            return self.__class__(combined)
+        elif isinstance(other, str):
+            if os.path.isdir(combined):
+                return self.__class__(combined)
+            elif os.path.isfile(combined):
+                return FilePath(combined)
+            else:
+                return DirPath(combined)
+        else:
+            raise ValueError(f"Cannot concatenate: {repr(self)} / {repr(other)}")
+
+    @property
+    def closure(self) -> tuple[SortedSet[PosixPath], SortedSet[PosixPath]]:
+        return SortedSet([self]) | all_dirs(self), all_files(self)
+
+    def ensure_exists(self):
+        if self.exists():
+            mode = self.stat().st_mode
+            self.chmod(mode | 0o700)
+        else:
+            self.mkdir(exist_ok=True, parents=True)
+
+    def detox(self):
+        """Ensure directory is usable by the current user."""
+        mode = self.stat().st_mode
+        if not (mode & 0o700 == 0o700):  # user rwx
+            self.chmod(mode | 0o700)
+
+    def rename(self, other):
+        shutil.move(str(self), str(other))
+
+
+class FilePath(PosixPath):
+    """A file path."""
+
+    def __truediv__(self, other) -> "FilePath":
+        """Concating a string to a FilePath extends it by the string.
+        In general,  concatenation to a filepath is an error.
+        """
+        if isinstance(other, str):
+            return FilePath(str(self) + other)
+        else:
+            raise ValueError(f"Cannot concatenate: {self} / {other}")
+
+    @property
+    def closure(self) -> tuple[SortedSet[PosixPath], SortedSet[PosixPath]]:
+        return SortedSet([self.parent]), SortedSet([self])
+
+    def rename(self, other):
+        shutil.move(str(self), str(other))
+
+
+FileOrDirPath = Union[FilePath, DirPath]
+
+
+def file_or_dir_path(path: str) -> FileOrDirPath:
+    """Return a FilePath or DirPath instance for the given path."""
+    if os.path.isfile(path):
+        return FilePath(path)
+    elif os.path.isdir(path):
+        return DirPath(path)
+    else:
+        raise ValueError(f"Path {path} is not a file or directory.")
+
+
+def dump_set(name: str, things: SortedSet[FileOrDirPath]) -> None:
+    """Dump the set of files and directories to the log."""
+    log.debug(f"{name}::")
+    for thing in things:
+        log.debug(f"    {thing}")
+
+
+# ===========================================================================================
+
+
+def shell(
+    script: str,
+    cwd: DirPath = DirPath("."),
+    timeout: float = 120,
+    interpreter="/bin/bash",
+    shell_settings="set -eux -o pipefail\n\n",
+    check: bool = True,
+    capture_output: bool = True,
+) -> subprocess.CompletedProcess:
+    """Treat `script` as an inline multi-line bash script and execute it after switching
+    to the `cwd` directory.
+    """
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp:
+        tmp.write(shell_settings)
+        tmp.write(script)
+        tmp.flush()
+        result = subprocess.run(
+            (f"{interpreter}", f"{tmp.name}"),
+            capture_output=capture_output,
+            text=True,
+            check=check,
+            cwd=cwd,
+            timeout=timeout,
+        )
+        os.remove(tmp.name)
+        return result
+
+
+# ===========================================================================================
+
+STARTUP_NOW = hex(int(time.time()))[2:]
+
+
+def now() -> str:
+    """Return the 8-digit hex representation of seconds since 1970."""
+    return STARTUP_NOW
+
+
+# ===========================================================================================
+
+
+def list_git_tree(repo_dir: str, ref: str) -> SortedSet[FileOrDirPath]:
+    result = shell(f"git ls-tree --full-tree -r --name-status {ref}", cwd=repo_dir)
+    return SortedSet(
+        [
+            file_or_dir_path(DirPath(repo_dir) / obj.strip())
+            for obj in result.stdout.splitlines()
+            if obj.strip()
+        ]
+    )
+
+
+def all_dirs(repo_dir: DirPath | str | PosixPath) -> SortedSet:
+    """Returns a sorted set of all directories in the given repo_dir,
+    whether owned by the user or not.
+    """
+    repo_dir = DirPath(repo_dir) if isinstance(repo_dir, str) else repo_dir
+    repo_dir.detox()
+    all = SortedSet()
+    for root, dirs, _files in os.walk(repo_dir):
+        rootp = DirPath(root)
+        for d in dirs:
+            d_path = rootp / DirPath(d)
+            d_path.detox()
+            if str(d_path).startswith(
+                (str(repo_dir / ".git"), str(repo_dir / ".gsv4-backups"))
+            ):
+                continue
+            else:
+                all.add(d_path)
+    return all
+
+
+def all_files(repo_dir: DirPath | PosixPath) -> SortedSet:
+    """Returns a sorted set of all files in the given repo_dir,
+    whether owned by the user or not.
+    """
+    repo_dir = DirPath(repo_dir) if isinstance(repo_dir, str) else repo_dir
+    all = SortedSet()
+    for root, _dirs, files in os.walk(repo_dir):
+        rootp = DirPath(root)
+        for f in files:
+            f_path = rootp / FilePath(f)
+            # stat = f_path.stat().st_mode
+            # if not (stat & 0o600 == 0o600):  # file rw-
+            #     f_path.chmod(stat | 0o600)
+            if str(f_path).startswith(
+                (str(repo_dir / ".git"), str(repo_dir / ".gsv4-backups"))
+            ):
+                continue
+            else:
+                all.add(f_path)
+    return all
+
+
+def classify_git_status_line(line: str) -> Tuple[str, FileOrDirPath]:
+    """Interpret one line of git status output into the code identifying the kind of
+    anomalous thing it is,  and the thing itself.
+
+    For instance,  a status line which looks like:
+
+        ?? the_thing
+
+    is interpreted to something more like:
+
+        ("untracked", FileOrDirPath("the_thing"))
+
+    A git status filepath ending with "/" is interpreted as a directory,  otherwise as a regular file.
+    """
+    parsing = {
+        "??": "untracked",
+        "A": "added",
+        "M": "modified",
+        "D": "deleted",
+        "R": "renamed",
+        "C": "copied",
+        "T": "typechange",
+        "U": "updated",
+    }
+    words: List[str] = line.strip().split()
+    mode: str = parsing.get(words[0], "unknown")
+    pathstr: str = words[3] if mode == "renamed" else words[1]
+    path: FileOrDirPath = (DirPath if pathstr.endswith("/") else FilePath)(pathstr)
+    return (mode, path)
+
+
+class Syncer:
+    """Initializes a Syncer instance.
+
+    Args:
+      repo_url: The URL of the Git repository to sync.
+      repo_dir: Local directory to clone the repo into.
+      ref: Git ref (branch name, tag, or commit hash) to check out.
+
+    Attributes:
+      repo_url: The repository URL.
+      repo_dir: Local clone directory.
+      ref: Git ref (branch name, tag, or commit hash).
+      user_files: Sorted set of user files.
+      user_dirs: Sorted set of user directories.
+      all_files: Sorted set of all files.
+      all_dirs: Sorted set of all directories.
+      backups: Sorted set of backups.
+    """
+
+    def __init__(self, repo_url: str, repo_dir: str, ref: str, program) -> None:
+        self.repo_url = repo_url
+        self.repo_dir = DirPath(repo_dir)
+        self.ref = ref
+        self.program_dir = DirPath(os.path.dirname(program)).absolute()
+        self.all_files = SortedSet()
+        self.all_dirs = SortedSet()
+        self.backups = SortedSet()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(repo_url='{self.repo_url}', repo_dir='{self.repo_dir}', ref='{self.ref}')"
+
+    @property
+    def backup_dir(self):
+        return self.repo_dir / ".gsv4-backups"
+
+    @property
+    def git_files(self) -> SortedSet:
+        """Return the sorted set of files owned by the repo vs. the user."""
+        return list_git_tree(self.repo_dir, self.ref)
+
+    @property
+    def git_dirs(self) -> SortedSet:
+        """Return the sorted set of dirs owned by the repo vs. the user."""
+        return SortedSet(
+            [
+                DirPath(obj.parent)
+                for obj in self.git_files
+                if obj.parent != self.repo_dir
+            ]
+        )
+
+    @property
+    def user_files(self) -> SortedSet:
+        """Return the sorted set of files owned by the user."""
+        return all_files(self.repo_dir) - self.git_files
+
+    @property
+    def user_dirs(self) -> SortedSet:
+        """Return the sorted set of dirs owned by the user."""
+        return all_dirs(self.repo_dir) - self.git_dirs
+
+    def sync(self) -> None:
+        """Sync the local git clone with the origin repository.
+
+        Fetches latest commits from origin, checks out the configured branch,
+        removes untracked files, restores backed-up user files, and validates the
+        sync was successful.
+
+        Clones a new local repo if one doesn't already exist.
+        """
+        log.info(f"Syncing {self}")
+        try:
+            if not self.repo_dir.exists():  # repo_dir exists at all
+                self.clone_origin()
+            else:
+                log.info("Updating existing clone.")
+                self.prepare_for_update()
+                self.perform_update()
+                self.finalize_update()
+            log.info("Validating...")
+            self.validate_sync_result()
+        except Exception as exc:
+            log.info(f"Updating failed, falling back due to: {exc}")
+            self.fallback_sync()
+        self.lock_clone()
+        self.add_sync_instructions()
+        self.validate_clone(diff=False)
+        log.info("Sync complete.")
+
+    def prepare_for_update(self) -> None:
+        """The standard update attempts to update an existing clone by forcing
+        any required perms which have been turned off by the user and by backing up
+        and then restoring any user changes. User changes in conflict with an
+        updated repo are moved to an alternate file with a time-based suffix.
+        """
+        self.detoxify_repo()
+        self.backup_dir.ensure_exists()
+        git_status = self.get_parsed_clone_status()
+        self.backups = self.classify_and_backup(git_status)
+
+    def perform_update(self) -> None:
+        """
+        Fetches the latest commits from the origin repository and updates the local branch to match.
+        This method is part of the sync process, which ensures the local
+        repository is up-to-date with the origin.  It first fetches the latest
+        commits from the origin,  then resets the local branch to match the origin branch.
+        """
+        self.fetch_origin()
+        self.reset_and_update_ref()
+
+    def finalize_update(self) -> None:
+        """
+        Finalizes the update process by:
+        - Dumping sets of data for debug analysis
+        - Getting all artifacts (files, directories, etc.) from the repository
+        - Restoring any backups of user files that were created during the update process
+        """
+        self.restore_backups()
+        self.clear_backup_dir()
+
+    def fallback_sync(self) -> None:
+        """If the standard sync fails, the existing clone is moved to
+        a backup directory with a time-based suffix and an entirely
+        new clone is created completely replacing the original.
+        """
+        self.repo_dir.parent.chmod(0o755)
+        backup_location = self.repo_dir.with_suffix("." + now())
+        log.info(f"Backing up existing clone to {backup_location} and re-cloning.")
+        shutil.move(str(self.repo_dir), str(backup_location))
+        # self.repo_dir.rename(backup_location);  os.rename -> bad for Docker
+        self.clone_origin()
+
+    def validate_sync_result(self) -> None:
+        """Once some form of sync has been completed, the clone is
+        validated and then permissions are locked down to discourage
+        user modification of file objects.  Directories are left open
+        for writes to permit saving checkpoints and user copies of files
+        or directories which future syncs try to tiptoe around.
+        This step also adds a SYNC-INSTRUCTIONS.md file to the repo and
+        top level directory to guide users towards compatible use of
+        these references clones,  essentially do not modify the files.
+        This augments the active approach of making files readonly.
+        """
+        self.get_all_artifacts()
+        self.dump_sets()
+        self.validate_clone()
+
+    def fetch_origin(self) -> None:
+        """Fetches repository after setting/restoring origin URL.
+        Sets the remote origin to self.repo_url while preserving any partial-clone
+        extension config (remote.origin.promisor, partialclonefilter) that would be
+        stripped by delete_remote() + create_remote().
+        Resets the repo to clear staged changes.
+        """
+        log.debug("Fetching", self.repo_url)
+        self.repo = git.Repo(self.repo_dir)
+        try:
+            origin = self.repo.remote("origin")
+            origin.set_url(self.repo_url)
+        except ValueError:
+            self.repo.create_remote("origin", self.repo_url)
+        self.repo.git.config("safe.directory", str(self.repo_dir))
+        self.repo.git.fetch("origin")
+
+    def clone_origin(self) -> None:
+        """Clone the git repository to self.repo_dir.
+
+        First do a shallow clone to depth 1 without checking out files.
+        Fetch just the branch we want.
+        Get the list of files in the target branch.
+        Do a second shallow clone, still without checking out, but only fetching the files we need.
+        """
+        log.info("Creating new clone.")
+
+        # Try cloning with branch parameter first (works for branches)
+        try:
+            self.repo = git.Repo.clone_from(
+                self.repo_url, self.repo_dir, filter="blob:none", branch=self.ref
+            )
+        except git.exc.GitCommandError:
+            # If that fails (likely a tag or commit hash), clone without specifying branch
+            log.debug(f"'{self.ref}' not resolved; retrying generic clone")
+            self.repo = git.Repo.clone_from(
+                self.repo_url, self.repo_dir, filter="blob:none"
+            )
+
+        self.repo.git.config("safe.directory", str(self.repo_dir))
+        self.repo.git.fetch("origin")
+
+    def add_sync_instructions(self) -> None:
+        """Add the sync instructions file to the repo and the root directory."""
+        sync_file = FilePath("SYNC-INSTRUCTIONS.md")
+        text = (self.program_dir / sync_file).read_text()
+        repo_file = self.repo_dir / sync_file
+        if repo_file.exists():
+            repo_file.chmod(0o664)
+        with repo_file.open("w+") as f:
+            f.write(text)
+        parent_file = self.repo_dir.parent / sync_file
+        if parent_file.exists():
+            parent_file.chmod(0o664)
+        with parent_file.open("w+") as f:
+            f.write(text)
+
+    def detoxify_repo(self) -> None:
+        """Traverse repo to force directory and file permissions into usable states now.
+        Recompute real artifacts the same way later.
+        """
+        log.debug("Detoxifying")
+        self.get_all_artifacts()
+
+    def get_all_artifacts(self) -> None:
+        """Populate sorted sets of all files and directories under the repo directory."""
+        log.debug("Collecting all dirs and files.")
+        self.all_dirs = all_dirs(self.repo_dir)
+        self.all_files = all_files(self.repo_dir)
+
+    def get_parsed_clone_status(self) -> List[Tuple[str, FileOrDirPath]]:
+        """Get the clone porecelain status output which reveals changes
+        as well as untracked files.
+
+        Returns list of tuples interpreting each line of git status output
+        in terms of the kind of change it is and the thing itself.  One of the
+        most critical "changes" however is the "untracked" status,  which means
+        a file not represented in the *current* git clone/version.
+        """
+        git_status = shell("git status --porcelain", cwd=self.repo_dir).stdout
+        log.debug("git status:\n", git_status)
+        return [
+            classify_git_status_line(line)
+            for line in git_status.splitlines()
+            if ".gsv4-backups" not in line
+        ]
+
+    def classify_and_backup(
+        self, git_status: List[Tuple[str, FileOrDirPath]]
+    ) -> SortedSet[FileOrDirPath]:
+        """Based on git status, classify files and directories in the clone directory as
+        either belonging to the user or belonging to the git repo so they can be handled
+        differently during locking and unlocking.  This enables the preservation of user
+        files, directories and their access modes to the extent possible.
+        """
+        log.debug("Classifying clone git status and backing up user artifacts.")
+        backups = SortedSet()
+        for mode, thing in git_status:
+            log.debug(f"Classified {thing} as {mode}.")
+            if mode in _DELETED_MODES:
+                # ignore deleted files; sync will restore missing file
+                pass
+            elif mode in _USER_BACKUP_MODES:
+                backup_copy = self.backup_artifact(self.repo_dir / thing)
+                backups.add(backup_copy)
+            else:
+                log.info("git status:\n", git_status)
+                raise RuntimeError(
+                    f"Unhandled git status {repr(mode)} for {repr(thing)}."
+                )
+        return backups
+
+    def backup_artifact(self, original: FileOrDirPath) -> FileOrDirPath:
+        """Back up the user file or directory and track it.
+
+        This adds all "user" files and directories,  whether in conflict with the
+        upstream repo or not, to tracking lists,  and move them to a hidden
+        backup directory.
+
+        Later if the file/dir is not found in the updated clone,  it will
+        be restored from the backup to its original name.  If it is found then the
+        updated copy will be left in place and the back-up will be moved to a
+        parallel artifact with a time-based suffix added in order to preserve
+        the modified user version unchanged.
+
+        Args:
+          thing: The path to the user file or directory.
+        """
+        backup = self.backup_dir / original.relative_to(self.repo_dir)
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        original.rename(backup)
+        log.debug(f"Moved {original} to backup {backup}")
+        return backup
+
+    def restore_backups(self) -> None:
+        """Restore all user created artifacts which are not in conflict with the
+        repo. For backups which have been replaced by the update,  restore the
+        backup to a parallel  artifact with a time-based suffix addded to make
+        it distinct from the original.
+        """
+        log.info("Restoring backups.")
+        if not len(self.backups):
+            log.warning("No backups to restore.")
+        self.restores = SortedSet()
+        for backup in self.backups:
+            original = self.repo_dir / backup.relative_to(self.backup_dir)
+            restored = (
+                original.with_suffix(original.suffix + "." + now())
+                if original.exists()
+                else original
+            )
+            log.debug(f"Restoring backup {backup} to {restored}")
+            backup.rename(restored)
+        self.backups = SortedSet()
+
+    def dump_sets(self) -> None:
+        """Dump the sets of all files and directories to the log."""
+        dump_set("All dirs", self.all_dirs)
+        dump_set("All files", self.all_files)
+        dump_set("User dirs", self.user_dirs)
+        dump_set("User files", self.user_files)
+        dump_set("Git dirs", self.git_dirs)
+        dump_set("Git files", self.git_files)
+
+    def _resolve_checkout_spec(self) -> str | None:
+        """Return the exact refspec to hand to ``git checkout`` for ``self.ref``.
+
+        Resolution order (all checks against the local repo after fetch):
+
+        1. Remote-tracking branch: try ``origin/<ref>``. If present → return ``"origin/<ref>"``.
+        2. Tag: try ``tags/<ref>``. If present → return ``<ref>`` directly so ``git checkout <tag>`` works and leaves detached HEAD at the tag target.
+        3. Commit hash: try a direct rev-parse of raw ``<ref>``. Valid hashes resolve to themselves → return ``<ref>``. (Partial SHA-1s are accepted by git's rev-parse automatically.)
+
+        Returns ``None`` if no valid ref can be resolved, signalling the caller
+        that the ref is unknown and may require a retry / fallback.
+        """
+        specs = [
+            f"origin/{self.ref}",
+            f"tags/{self.ref}",
+            self.ref,
+        ]
+        for spec in specs:
+            try:
+                shell(
+                    f"git rev-parse --verify {spec}",
+                    cwd=self.repo_dir,
+                    check=True,
+                    capture_output=True,
+                )
+            except subprocess.CalledProcessError:
+                continue
+            if spec == self.ref or spec.startswith("tags/"):
+                return self.ref
+            else:
+                return spec
+        return None
+
+    def reset_and_update_ref(self) -> str:
+        """Updates the local git repo to the specified ref (branch, tag, or commit hash)."""
+        log.debug("Resetting and updating.")
+        #  self.repo.head.reset(index=True, working_tree=True)
+
+        checkout_ref = self._resolve_checkout_spec()
+        if not checkout_ref:
+            raise ValueError(
+                f"Cannot resolve git ref {self.ref!r} in "
+                f"{self.repo_dir}; cannot perform sync checkout."
+            )
+
+        return shell(
+            f"""set -euo pipefail
+git reset HEAD .
+git status --porcelain
+git checkout -- .
+git checkout {checkout_ref}
+#git status --porcelain
+""",
+            cwd=self.repo_dir,
+        ).stdout
+
+    def reset_and_update_branch(self) -> str:
+        """Deprecated alias for :meth:`reset_and_update_ref`."""
+        return self.reset_and_update_ref()
+
+    def lock_clone(self):
+        """Lock the repo by changing the permissions of all files and directories
+        owned by the repo and not the user.
+        """
+        log.info(f"Locking clone {self.repo_dir}: files r/o,  dirs r/w.")
+        for dir in self.git_dirs:
+            log.debug(f"Opening directory {dir} for writing.")
+            dir.chmod(dir.stat().st_mode | 0o700)
+        for file in self.git_files:
+            log.debug(f"Locking file {file}.")
+            file.chmod(file.stat().st_mode & ~0o222)
+
+    def clear_backup_dir(self):
+        """Clear the backup directory."""
+        log.debug(f"Clearing backup directory {self.backup_dir}")
+        for thing in self.backup_dir.iterdir():
+            if not thing.is_dir():
+                log.warning(
+                    f"Unexpected file {thing} in backup directory. Should be empty."
+                )
+                break
+        else:
+            shutil.rmtree(self.backup_dir)
+
+    def validate_clone(self, diff=True):
+        """Check that the sync result is as expected."""
+        for mode, path in self.get_parsed_clone_status():
+            assert (
+                mode == "untracked"
+            ), f"Expected only untracked artifacts to be present: {path}"
+        if diff:
+            ref = self._resolve_checkout_spec()
+            if not ref:
+                raise ValueError(
+                    f"Cannot resolve git ref {self.ref!r} in "
+                    f"{self.repo_dir}; cannot run diff validation."
+                )
+            results = shell(f"git diff {ref}", cwd=self.repo_dir)
+            if results.returncode != 0:
+                raise ValueError("Expected a clean diff for updated-clone repo.")
+
+
+# ========================================================================================
+
+
+def parse_args(argv: List[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Intelligently create or update a repo clone intended for class, testing, and reference usage vs. git development."
+    )
+    parser.add_argument(
+        "repo_url",
+        type=str,
+        help="The URL for the repo which is being synced.  Required.",
+    )
+    parser.add_argument(
+        "ref",
+        type=str,
+        help="The git ref (branch name, tag, or commit hash) to check out.  Required.",
+    )
+    parser.add_argument(
+        "repo_dir",
+        type=str,
+        help="The path to the clone being created/updated.  Required.",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable logging DEBUG messages.",
+    )
+    parser.add_argument(
+        "-p",
+        "--profile",
+        action="store_true",
+        help="Enable logging DEBUG messages.",
+    )
+    return parser.parse_args(argv)
+
+
+def _main(program, args) -> int:
+    """Main entry point for the git sync script.
+
+    Parses command line arguments, sets up logging, creates a Syncer instance,
+    and runs the sync process. Handles errors and returns exit code.
+
+    If an error occurs,  a log is left behind in the repo_dir,  nominally
+    "gs4.failed.log".  If no error occurs, the log file is cleared.
+    """
+    global log
+    log = Log("gs4.log", level="DEBUG" if args.verbose else "INFO")
+    try:
+        opt_out_file = DirPath(os.environ["HOME"]) / FilePath(".git-sync-off")
+        if opt_out_file.exists():
+            log.info(f"git-sync is disabled by file {opt_out_file}.")
+            log.info("Remove .git-sync-off to restore syncing.")
+        else:
+            syncer = Syncer(args.repo_url, args.repo_dir, args.ref, program)
+            syncer.sync()
+    except Exception:
+        log.exception("Failed to sync:")
+        log_dir = DirPath(args.repo_dir)
+        if log_dir.exists() and log_dir.is_dir():
+            log.moveto(log_dir / "gs4.failed.log")
+        return 1
+    log.clear()
+    return 0
+
+
+def console_profile(program, args):
+    """Run `function` under the profiler and print results to console."""
+    prof = cProfile.Profile()
+    prof.enable()
+    result = _main(program, args)
+    prof.disable()
+    prof_stats = pstats.Stats(prof).sort_stats("cumulative")
+    prof_stats.print_stats(100)
+    return result
+
+
+def main(argv: List[str]) -> int:
+    program = argv[0]
+    args = parse_args(argv[1:])
+    if args.profile:
+        result = console_profile(program, args)
+    else:
+        result = _main(program, args)
+    return result
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

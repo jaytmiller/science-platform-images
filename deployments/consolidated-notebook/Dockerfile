@@ -3,11 +3,21 @@
 
 # Consolidated image: a single Dockerfile that flattens the
 #   docker-stacks-foundation -> base-notebook -> minimal-notebook
-# inheritance chain into one build.
+# inheritance chain AND the science-platform-images shared layer
+# (deployments/common/Dockerfile) into one build.
 #
-# All layers, packages, scripts, and configs from the three source images are
+# All layers, packages, scripts, and configs from the source images are
 # preserved in build order. The two pinned build stages (root OS and Micromamba)
 # carry the digest pinning forward from docker-stacks-foundation.
+#
+# External dependencies were minimized during consolidation:
+#   * sudo is never installed (the common layer removed it as a security risk),
+#     so the sudoers edits from the foundation layer were dropped.
+#   * The AWS CLI zip download from https://awscli.amazonaws.com was replaced
+#     by the conda-forge `awscli` package in requirements.mamba.
+#   * The dead nb-wrangler install block and its /tmp/nbw-wrangler-spec.yaml
+#     copy were dropped; deployments still carry and use their own
+#     environments/nbw-wrangler-spec.yaml.
 #
 # Lock-readiness notes (for a future "locked" variant of this image):
 #   * Both root inputs are digest-pinned (Ubuntu and the Micromamba image), so
@@ -18,9 +28,9 @@
 #     package list and swap the install for an offline install against a
 #     directory of pre-downloaded, hash-pinned packages; nothing else about the
 #     layer order needs to change.
-#   * The apt package sets were already collapsed into a single apt RUN driven
-#     by `requirements.apt`, so the unlocked source is one apt transaction and
-#     one conda transaction.
+#   * All apt packages (docker-stacks + common) are collapsed into a single apt
+#     RUN driven by `requirements.apt`, so the unlocked source is one apt
+#     transaction and one conda transaction.
 
 # This build arg allows building the image based on a different root image
 ARG ROOT_IMAGE=default_root_image
@@ -38,6 +48,7 @@ FROM mambaorg/micromamba:2.10.0@sha256:e1476182cd40eb1f7c0cfae4adec9bfd78f3d7f05
 FROM $ROOT_IMAGE
 
 LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
+LABEL maintainer="Science Platforms <dmd_octarine@stsci.edu>"
 ARG NB_USER="jovyan"
 ARG NB_UID="1000"
 ARG NB_GID="100"
@@ -49,9 +60,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 USER root
 
 # Install all OS dependencies in a single transaction using the package list
-# in `requirements.apt` (which combines the package sets of
-# docker-stacks-foundation, base-notebook, and minimal-notebook; package
-# metadata comments live in that file)
+# in `requirements.apt` (the deduplicated union of the docker-stacks image
+# package sets and the common layer tool chains; package metadata comments
+# live in that file)
 ENV DEBIAN_FRONTEND=noninteractive
 COPY requirements.apt /tmp/requirements.apt
 RUN apt-get update --yes && \
@@ -76,6 +87,8 @@ RUN apt-get update --yes && \
 RUN update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 10
 
 # Configure environment
+# (NB_UID/NB_GID are exported here once; the common layer re-exported them
+#  after its base image, which is unnecessary now that there is one Dockerfile)
 ENV CONDA_DIR=/opt/conda \
     SHELL=/bin/bash \
     NB_USER="${NB_USER}" \
@@ -86,6 +99,28 @@ ENV CONDA_DIR=/opt/conda \
     LANGUAGE=C.UTF-8
 ENV PATH="${CONDA_DIR}/bin:${PATH}" \
     HOME="/home/${NB_USER}"
+
+# Configure the environment added by the common layer
+ENV MKL_THREADING_LAYER="GNU"
+ENV CFLAGS="-fcommon -fpic"
+ENV PIP_TOOLS_CACHE_DIR="${HOME}/.cache/pip"
+ARG TZ='America/New_York'
+ARG USE_FROZEN=1
+ENV USE_FROZEN=${USE_FROZEN}
+ARG PIP_SWITCHES=""
+ENV PIP_SWITCHES=${PIP_SWITCHES}
+# Enable easy swap of conda with e.g. mamba
+ARG CONDA_VER=mamba
+ENV CONDA_VER=${CONDA_VER}
+ARG MAMBA_ROOT_PREFIX=/opt/conda
+ENV MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX}
+ARG USER_CACHE_DIRS=""
+ENV USER_CACHE_DIRS="${USER_CACHE_DIRS}"
+ENV KERNEL_SHELL=bash
+
+# Make sure user cache directories exist (empty by default; deployments can
+# point these at RUN-cache mount points)
+RUN for DIR in ${USER_CACHE_DIRS}; do mkdir -p ${DIR}; chown -R ${NB_UID}:${NB_GID} ${DIR}; done
 
 # Copy a script that we will use to correct permissions after running certain commands
 COPY fix-permissions /usr/local/bin/fix-permissions
@@ -105,9 +140,9 @@ RUN if id -un "${NB_UID}" >/dev/null 2>&1; then \
 
 # Create "${NB_USER}" user (`jovyan` by default) with UID="${NB_UID}" (`1000` by default) and in the 'users' group
 # and make sure these dirs are writable by the `users` group.
+# (the common layer disabled the admin/sudo groups in /etc/sudoers; since sudo
+#  is never installed, there is no sudoers file to edit)
 RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
-    sed -i.bak -e 's/^%admin/#%admin/' /etc/sudoers && \
-    sed -i.bak -e 's/^%sudo/#%sudo/' /etc/sudoers && \
     useradd --no-log-init --create-home --shell /bin/bash --uid "${NB_UID}" --no-user-group "${NB_USER}" && \
     mkdir -p "${CONDA_DIR}" && \
     chown "${NB_USER}:${NB_GID}" "${CONDA_DIR}" && \
@@ -136,8 +171,9 @@ RUN mkdir "/home/${NB_USER}/work" && \
 #     - repo2docker: <https://github.com/jupyterhub/repo2docker>
 # Install the packages listed in `requirements.mamba` (Python and Mamba and
 # jupyter_core from docker-stacks-foundation; JupyterHub, JupyterLab, NBClassic
-# and Jupyter Notebook from base-notebook), with the placeholder tokens in that
-# file replaced with the pinned micromamba version and the PYTHON_VERSION arg.
+# and Jupyter Notebook from base-notebook; awscli replacing the common layer's
+# awscliv2.zip download), with the placeholder tokens in that file replaced
+# with the pinned micromamba version and the PYTHON_VERSION arg.
 # Generate a Jupyter Server config.
 # Cleanup temporary files.
 # Correct permissions.
@@ -207,6 +243,51 @@ COPY --chown=${NB_UID}:${NB_GID} Rprofile.site /opt/conda/lib/R/etc/
 
 # Add setup scripts that may be used by downstream images or inherited images
 COPY setup-scripts/ /opt/setup-scripts/
+
+# =========================================================================
+# Content added by the science-platform-images common layer
+# (deployments/common/Dockerfile), merged in above ordering.
+
+# Match the common layer's login-shell behavior for downstream scripts
+SHELL ["/bin/bash", "--login", "-c"]
+
+# For ENV_BASH definition for non-login shells
+COPY bash.env /etc/bash.env
+ENV BASH_ENV=/etc/bash.env
+
+# System-wide .bashrc for non-login bash shells (sources the base environment
+# and puts /opt/tools user utilities on PATH)
+COPY bash.bashrc /tmp/bash.bashrc
+RUN cat /tmp/bash.bashrc >> /etc/bash.bashrc && rm -f /tmp/bash.bashrc
+
+# nb-wrangler configuration for installation under the base environment
+COPY nb-wrangler.rc /etc/nb-wrangler.rc
+
+# ----------------------------------------------------------------------
+# Set up the nb-wrangler pantry and root, will be further augmented by
+# specific deployments
+
+RUN source /etc/nb-wrangler.rc && \
+    mkdir -p ${NBW_ROOT} ${NBW_ROOT}/temps && \
+    chown -R ${NB_UID}:${NB_GID} ${NBW_ROOT} ${NBW_ROOT}/temps && \
+    chmod -R 775 ${NBW_ROOT} ${NBW_ROOT}/temps && \
+    chmod -R g+s ${NBW_ROOT} ${NBW_ROOT}/temps
+
+# ----------------------------------------------------------------------
+
+USER ${NB_UID}:${NB_GID}
+COPY --chown=${NB_UID}:${NB_GID} common-scripts/ /opt/common-scripts
+COPY --chown=${NB_UID}:${NB_GID} common-env/ /opt/common-env
+COPY --chown=${NB_UID}:${NB_GID} default-home-contents/ /etc/default-home-contents
+COPY --chown=${NB_UID}:${NB_GID} tools/ /opt/tools/
+COPY --chown=${NB_UID}:${NB_GID} VERSION /opt
+COPY --chown=${NB_UID}:${NB_GID} HASH /opt
+
+# ----------------------------------------------------------------------
+
+USER root
+RUN chown -R ${NB_UID}:${NB_GID} $HOME /opt/conda && \
+    fix-permissions $HOME /opt/conda
 
 RUN rm -rf "/home/${NB_USER}/.cache/rosetta"
 

@@ -135,13 +135,23 @@ if [ "$(id -u)" == 0 ]; then
         done
     fi
 
-    # Prepend ${CONDA_DIR}/bin to sudo secure_path
-    sed -r "s#Defaults\s+secure_path\s*=\s*\"?([^\"]+)\"?#Defaults secure_path=\"${CONDA_DIR}/bin:\1\"#" /etc/sudoers | grep secure_path >/etc/sudoers.d/path
+    # Prepend ${CONDA_DIR}/bin to sudo secure_path.
+    # Note: the consolidated image intentionally ships without sudo (the common
+    # layer removed it), so /etc/sudoers may not exist; skip when absent.
+    if [ -f /etc/sudoers ]; then
+        sed -r "s#Defaults\s+secure_path\s*=\s*\"?([^\"]+)\"?#Defaults secure_path=\"${CONDA_DIR}/bin:\1\"#" /etc/sudoers | grep secure_path >/etc/sudoers.d/path
+    else
+        _log_warn "sudo is not installed; skipping sudoers configuration"
+    fi
 
     # Optionally grant passwordless sudo rights for the desired user
     if [[ "${GRANT_SUDO}" == "1" || "${GRANT_SUDO}" == "yes" ]]; then
-        _log_info "Granting ${NB_USER} passwordless sudo rights!"
-        echo "${NB_USER} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/added-by-start-script
+        if [ -d /etc/sudoers.d ]; then
+            _log_info "Granting ${NB_USER} passwordless sudo rights!"
+            echo "${NB_USER} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/added-by-start-script
+        else
+            _log_warn "sudo is not installed; cannot grant sudo permissions"
+        fi
     fi
 
     # NOTE: This hook is run as the root user!

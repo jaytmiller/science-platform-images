@@ -1,0 +1,59 @@
+#! /bin/bash
+
+# set -eu
+
+# --- Shell Initialization ---
+# Default to 'mamba' if CONDA_VER is not set.
+export CONDA_VER=${CONDA_VER:-mamba}
+# Initialize conda/mamba shell functions for this script's execution context.
+eval "$(${CONDA_VER} shell hook --shell bash)"
+
+
+KERNEL_TOOLS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source  ${KERNEL_TOOLS}/kernel-utils
+
+usage "$# -lt 1" "<environment-name> [<python-version>|environment.yml] [<display-name>] [<kernel-root-dir>]" <<EOU
+Create a compute environment <environment-name> and add a JupyterLab kernel corresponding to it.
+
+If nothing is specified or a <python-version> is specified,  then the contents of the environment will be a 
+minimal Python environment with either the current or specified Python version.
+
+If an <environment.yml> file is given instead,  an environment with the specified packages and properties will be created.
+
+The menu item for selecting this kernel in Jupyter Lab will be <display-name> if specified, 
+otherwise <environment-name>.
+
+<kernel-root-dir> is the root directory for collections of environments, defaulting to \$HOME/envs.
+EOU
+
+ENVNAME=$1
+PYVER=${2:-`python --version | cut -d' ' -f2`}
+DISPNAME="${3:-${ENVNAME}}"
+ENVROOT="${4:-${ENVROOT}}"
+
+ENVDIR="${ENVROOT}/conda/${ENVNAME}"
+
+
+case "${PYVER}" in
+    *.yml|*.yaml)
+        banner "Creating environment ${ENVNAME} from ${CONDA_VER} spec ${PYVER} at ${ENVDIR}"
+        ${CONDA_VER} env create --quiet --yes --prefix="${ENVDIR}" --file="${PYVER}"
+        source ${KERNEL_TOOLS}/kernel-activate ${ENVNAME} >& /dev/null
+        ${CONDA_VER} install --prefix "${ENVDIR}"   --quiet --yes ipykernel
+    ;;
+    [0-9]*)
+        banner "Creating environment ${ENVNAME} with Python ${PYVER} at ${ENVDIR}"
+        ${CONDA_VER} create --quiet --yes --prefix="${ENVDIR}" python=${PYVER} ipykernel
+    ;;
+    *)
+        banner "Invalid input for Python version/environment.yml: ${PYVER}"
+        echo "Specify either Python <version> (e.g. 3.12) or a ${CONDA_VER} environment.yml file"
+        exit 1
+    ;;
+esac
+
+# ${CONDA_VER} init --quiet  ${KERNEL_SHELL}   >& /dev/null
+
+${KERNEL_TOOLS}/kernel-install  "${ENVNAME}"  "${DISPNAME}"  
+
+banner "Activate environment with:  source kernel-activate ${ENVNAME}"

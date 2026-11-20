@@ -1,0 +1,29 @@
+#! /bin/bash
+
+# NO set -e for source script
+# set -u
+
+KERNEL_TOOLS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source  ${KERNEL_TOOLS}/kernel-utils
+
+# Display usage information if no arguments are provided.
+if [ $# -lt 1 ]; then
+    echo "usage:  source kernel-deactivate [<environment-name>]"
+    echo
+    echo "This script attempts to deactivate the currently active environment."
+    echo "The <environment-name> argument is for consistency and typically ignored by deactivation logic."
+    echo
+    # No exit for sourced script.
+fi
+
+# Check if an environment is currently active before attempting to deactivate.
+# Prioritize deactivating virtual environments if one is active.
+if [ -n "${VIRTUAL_ENV}" ]; then
+    # banner "Deactivating virtual environment: ${VIRTUAL_ENV}"
+    deactivate
+elif [ -n "${CONDA_PREFIX}" ]; then # Only check CONDA_PREFIX if no VIRTUAL_ENV is active
+    # banner "Deactivating Conda environment: ${CONDA_PREFIX}"
+    ${CONDA_VER} deactivate
+else
+    banner "No environment is currently active."
+fi

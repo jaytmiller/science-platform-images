@@ -1,0 +1,28 @@
+#! /bin/bash
+
+# Standardize how we install apt packages and cleanup after,  make it easy.
+# 1. Install apt packages, without any questions asked
+# 2. Update pacakge metadata before install
+# 3. Remove unneeded files after install
+
+if [ $# == 0 ];  then
+echo "usage: apt-install <packages...>"
+exit 0
+fi
+
+set -eu
+
+PACKAGES=$*
+
+apt-get update --yes --fix-missing
+
+DEBIAN_FRONTEND=noninteractive apt-get install -f --yes --fix-missing  ${PACKAGES}
+
+# These dirs are not cached by buildkit as we configure it
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+if [ -z "${USER_CACHE_DIRS}" ]; then
+    echo "-------------------------------------------------------------------------------"
+    echo "===== Cleaning up apt cache..."
+    apt clean
+fi
