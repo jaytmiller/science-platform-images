@@ -12,13 +12,12 @@
 # Lock-readiness notes (for a future "locked" variant of this image):
 #   * Both root inputs are digest-pinned (Ubuntu and the Micromamba image), so
 #     the solver and the base OS are byte-reproducible.
-#   * Every conda package is installed inside exactly ONE RUN below (a
-#     `micromamba install` bootstrap followed by a `mamba install` of the
-#     Jupyter stack, both targeting ${CONDA_DIR}). To produce a locked
-#     variant, generate a lockfile (e.g. conda-lock) from those package lists
-#     and swap the installs for an offline install against a directory of
-#     pre-downloaded, hash-pinned packages; nothing else about the layer order
-#     needs to change.
+#   * Every conda package is listed in `requirements.mamba` and installed in a
+#     single `micromamba install` transaction targeting ${CONDA_DIR}. To
+#     produce a locked variant, generate a lockfile (e.g. conda-lock) from that
+#     package list and swap the install for an offline install against a
+#     directory of pre-downloaded, hash-pinned packages; nothing else about the
+#     layer order needs to change.
 #   * The apt package sets were already collapsed into a single apt RUN driven
 #     by `requirements.apt`, so the unlocked source is one apt transaction and
 #     one conda transaction.
@@ -135,8 +134,10 @@ RUN mkdir "/home/${NB_USER}/work" && \
 #   Similar projects using Micromamba:
 #     - Micromamba-Docker: <https://github.com/mamba-org/micromamba-docker>
 #     - repo2docker: <https://github.com/jupyterhub/repo2docker>
-# Install Python, Mamba, jupyter_core (from docker-stacks-foundation) and
-# JupyterHub, JupyterLab, NBClassic and Jupyter Notebook (from base-notebook).
+# Install the packages listed in `requirements.mamba` (Python and Mamba and
+# jupyter_core from docker-stacks-foundation; JupyterHub, JupyterLab, NBClassic
+# and Jupyter Notebook from base-notebook), with the placeholder tokens in that
+# file replaced with the pinned micromamba version and the PYTHON_VERSION arg.
 # Generate a Jupyter Server config.
 # Cleanup temporary files.
 # Correct permissions.
@@ -144,35 +145,24 @@ RUN mkdir "/home/${NB_USER}/work" && \
 # files across image layers when the permissions change.
 # This is the single package transaction that a lockfile would pin down.
 COPY --chown="${NB_UID}:${NB_GID}" initial-condarc "${CONDA_DIR}/.condarc"
+COPY requirements.mamba /tmp/requirements.mamba
 WORKDIR /tmp
 RUN --mount=type=bind,from=micromamba,source=/bin/micromamba,target=/usr/local/bin/micromamba \
     set -x && \
-    PYTHON_SPECIFIER="python=${PYTHON_VERSION}" && \
-    if [ "${PYTHON_VERSION}" = "default" ]; then PYTHON_SPECIFIER="python"; fi && \
-    # Install the packages
+    PYTHON_SUFFIX="=${PYTHON_VERSION}" && \
+    if [ "${PYTHON_VERSION}" = "default" ]; then PYTHON_SUFFIX=""; fi && \
+    # Replace the `@MAMBA_VERSION@` token with the version of the pinned
+    # micromamba binary and the `@PYTHON@` token with the Python version
+    # constraint, then strip comments and collapse the list to a single
+    # whitespace-separated line for the install
+    PKGS="$(sed -e "s/@MAMBA_VERSION@/$(micromamba --version)/" -e "s/@PYTHON@/${PYTHON_SUFFIX}/" /tmp/requirements.mamba | sed 's/#.*//' | tr -s '[:space:]' ' ')" && \
+    # Install the packages in one transaction targeting ${CONDA_DIR}
     micromamba install \
         --root-prefix="${CONDA_DIR}" \
         --prefix="${CONDA_DIR}" \
         --yes \
-        'jupyter_core' \
-        'conda' \
-        # Install mamba with the same version as the micromamba image pinned above
-        # (they are released together), so dependabot keeps the version up to date
-        "mamba==$(micromamba --version)" \
-        "${PYTHON_SPECIFIER}" && \
-    # NOTE: this second transaction must use `mamba` (the conda plugin installed
-    # above into ${CONDA_DIR}), not the bind-mounted standalone `micromamba`
-    # binary: `mamba`/conda auto-detect their prefix at /opt/conda, while plain
-    # micromamba has no root prefix configured in this image.
-    mamba install --yes \
-        'jupyterhub-singleuser' \
-        'jupyterlab' \
-        'nbclassic' \
-        # Sometimes, when the new version of `jupyterlab` is released, latest `notebook` might not support it for some time
-        # Old versions of `notebook` (<v7) didn't have a restriction on the `jupyterlab` version, and old `notebook` is getting installed
-        # That's why we have to pin the minimum notebook version
-        # More info: https://github.com/jupyter/docker-stacks/pull/2167
-        'notebook>=7.2.2' && \
+        ${PKGS} && \
+    # rm -f /tmp/requirements.mamba && \
     # Pin major.minor version of python
     # https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-pkgs.html#preventing-packages-from-updating-pinning
     mamba list --full-name 'python' | awk 'END{sub("[^.]*$", "*", $2); print $1 " " $2}' >> "${CONDA_DIR}/conda-meta/pinned" && \

@@ -1,0 +1,33 @@
+# Conda (mamba) package list for the consolidated image, factored out of the
+# Dockerfile. One package spec per line; "#" starts a comment and blank lines
+# are ignored.
+#
+# The Dockerfile substitutes two placeholder tokens at build time and then
+# installs the whole list in a single transaction targeting ${CONDA_DIR}:
+#   @MAMBA_VERSION@ -> the version of the digest-pinned micromamba binary
+#                     (micromamba and mamba are released together)
+#   @PYTHON@        -> "=<PYTHON_VERSION>" from the PYTHON_VERSION build arg,
+#                      or empty when PYTHON_VERSION="default"
+
+# --- from docker-stacks-foundation ---
+jupyter_core
+conda
+# Install mamba with the same version as the micromamba image pinned in the
+# Dockerfile (they are released together), so dependabot keeps the version up
+# to date
+mamba==@MAMBA_VERSION@
+# Pin the Python version here via the PYTHON_VERSION build arg (or "default",
+# which leaves it unpinned)
+python@PYTHON@
+
+# --- from base-notebook: the Jupyter stack ---
+jupyterhub-singleuser
+jupyterlab
+nbclassic
+# Sometimes, when the new version of `jupyterlab` is released, latest
+# `notebook` might not support it for some time.
+# Old versions of `notebook` (<v7) didn't have a restriction on the
+# `jupyterlab` version, and old `notebook` is getting installed.
+# That's why we have to pin the minimum notebook version.
+# More info: https://github.com/jupyter/docker-stacks/pull/2167
+notebook>=7.2.2
