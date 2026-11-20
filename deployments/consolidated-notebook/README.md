@@ -31,9 +31,10 @@ reproducible variant is a small, well-scoped change:
 - Both external inputs are digest-pinned build stages: the Ubuntu root image
   and the `mambaorg/micromamba` image (which supplies the pinned solver
   binary via a bind mount).
-- All conda packages are installed in exactly one `RUN`, and all apt packages
-  in one `apt-get` transaction, so a lockfile (e.g. `conda-lock` output)
-  generated from that single package list fully pins the Python side.
-- The locked variant would replace the `micromamba install` commands with an
-  offline install (`--offline` / `--use-only-tarball`) against a checked-in
-  lockfile and a directory of downloaded, hash-pinned `.conda` packages.
+- All conda packages are installed in one `RUN` (micromamba bootstrap of the
+  `${CONDA_DIR}` prefix, then a `mamba install` of the Jupyter stack), and all
+  apt packages in one `apt-get` transaction, so lockfiles generated from those
+  package lists fully pin the Python side.
+- The locked variant would replace the installs with an offline install
+  (`--offline` / `--use-only-tarball`) against a checked-in lockfile and a
+  directory of downloaded, hash-pinned `.conda` packages.

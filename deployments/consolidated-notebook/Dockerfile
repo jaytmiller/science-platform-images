@@ -12,10 +12,11 @@
 # Lock-readiness notes (for a future "locked" variant of this image):
 #   * Both root inputs are digest-pinned (Ubuntu and the Micromamba image), so
 #     the solver and the base OS are byte-reproducible.
-#   * Every conda package is installed in exactly ONE `micromamba install` RUN
-#     below. To produce a locked variant, generate a lockfile (e.g. conda-lock)
-#     from that single package list and swap the install for
-#     `mamba install --offline` (or `micromamba create`) against a directory of
+#   * Every conda package is installed inside exactly ONE RUN below (a
+#     `micromamba install` bootstrap followed by a `mamba install` of the
+#     Jupyter stack, both targeting ${CONDA_DIR}). To produce a locked
+#     variant, generate a lockfile (e.g. conda-lock) from those package lists
+#     and swap the installs for an offline install against a directory of
 #     pre-downloaded, hash-pinned packages; nothing else about the layer order
 #     needs to change.
 #   * The apt package sets were already collapsed into a single apt RUN, so the
@@ -197,7 +198,11 @@ RUN --mount=type=bind,from=micromamba,source=/bin/micromamba,target=/usr/local/b
         # (they are released together), so dependabot keeps the version up to date
         "mamba==$(micromamba --version)" \
         "${PYTHON_SPECIFIER}" && \
-    micromamba install --yes \
+    # NOTE: this second transaction must use `mamba` (the conda plugin installed
+    # above into ${CONDA_DIR}), not the bind-mounted standalone `micromamba`
+    # binary: `mamba`/conda auto-detect their prefix at /opt/conda, while plain
+    # micromamba has no root prefix configured in this image.
+    mamba install --yes \
         'jupyterhub-singleuser' \
         'jupyterlab' \
         'nbclassic' \
