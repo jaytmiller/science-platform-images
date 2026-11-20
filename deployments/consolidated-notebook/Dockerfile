@@ -19,8 +19,9 @@
 #     and swap the installs for an offline install against a directory of
 #     pre-downloaded, hash-pinned packages; nothing else about the layer order
 #     needs to change.
-#   * The apt package sets were already collapsed into a single apt RUN, so the
-#     unlocked source is one apt transaction and one conda transaction.
+#   * The apt package sets were already collapsed into a single apt RUN driven
+#     by `requirements.apt`, so the unlocked source is one apt transaction and
+#     one conda transaction.
 
 # This build arg allows building the image based on a different root image
 ARG ROOT_IMAGE=default_root_image
@@ -48,60 +49,21 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 USER root
 
-# Install all OS dependencies in a single transaction, combining the package
-# sets of docker-stacks-foundation, base-notebook, and minimal-notebook
+# Install all OS dependencies in a single transaction using the package list
+# in `requirements.apt` (which combines the package sets of
+# docker-stacks-foundation, base-notebook, and minimal-notebook; package
+# metadata comments live in that file)
 ENV DEBIAN_FRONTEND=noninteractive
+COPY requirements.apt /tmp/requirements.apt
 RUN apt-get update --yes && \
     # - `apt-get upgrade` is run to patch known vulnerabilities in system packages
     #   as the Ubuntu base image is rebuilt too seldom sometimes (less than once a month)
     apt-get upgrade --yes && \
-    apt-get install --yes --no-install-recommends \
-    # --- from docker-stacks-foundation ---
-    ca-certificates \
-    locales \
-    # - `netbase` provides /etc/{protocols,rpc,services}, part of POSIX
-    #   and required by various C functions like getservbyname and getprotobyname
-    #   https://github.com/jupyter/docker-stacks/pull/2129
-    netbase \
-    sudo \
-    # - `tini` is installed as a helpful container entrypoint,
-    #   that reaps zombie processes and such of the actual executable we want to start
-    #   See https://github.com/krallin/tini#why-tini for details
-    tini \
-    wget && \
-    # --- from base-notebook ---
-    apt-get install --yes --no-install-recommends \
-    # - Add necessary fonts for matplotlib/seaborn
-    #   See https://github.com/jupyter/docker-stacks/pull/380 for details
-    fonts-liberation \
-    # - `pandoc` is used to convert notebooks to html files
-    #   it's not present in the aarch64 Ubuntu image, so we install it here
-    pandoc \
-    # - `run-one` - a wrapper script that runs no more
-    #   than one unique instance of some command with a unique set of arguments,
-    #   we use `run-one-constantly` to support the `RESTARTABLE` option
-    run-one && \
-    # --- from minimal-notebook: OS dependencies for a fully functional Server ---
-    apt-get install --yes --no-install-recommends \
-    # Common useful utilities
-    curl \
-    git \
-    nano-tiny \
-    tzdata \
-    unzip \
-    vim-tiny \
-    # git-over-ssh
-    openssh-client \
-    # `less` is needed to run help in R
-    # see: https://github.com/jupyter/docker-stacks/issues/1588
-    less \
-    # `nbconvert` dependencies
-    # https://nbconvert.readthedocs.io/en/latest/install.html#installing-tex
-    texlive-xetex \
-    texlive-fonts-recommended \
-    texlive-plain-generic \
-    # Enable clipboard on Linux host systems
-    xclip && \
+    # Strip comments from `requirements.apt` and install the package list in
+    # one transaction; `xargs` splits the remaining whitespace-separated names
+    sed 's/#.*//' /tmp/requirements.apt | xargs --no-run-if-empty \
+        apt-get install --yes --no-install-recommends && \
+    rm -f /tmp/requirements.apt && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     # - The Ubuntu 26.04 image ships Canonical's Pebble service manager as a bare
     #   /usr/bin/pebble, owned by no package, so `apt-get upgrade` cannot patch it.

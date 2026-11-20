@@ -33,8 +33,8 @@ reproducible variant is a small, well-scoped change:
   binary via a bind mount).
 - All conda packages are installed in one `RUN` (micromamba bootstrap of the
   `${CONDA_DIR}` prefix, then a `mamba install` of the Jupyter stack), and all
-  apt packages in one `apt-get` transaction, so lockfiles generated from those
-  package lists fully pin the Python side.
+  apt packages listed in `requirements.apt` in one `apt-get` transaction, so
+  lockfiles generated from those package lists fully pin the Python side.
 - The locked variant would replace the installs with an offline install
   (`--offline` / `--use-only-tarball`) against a checked-in lockfile and a
   directory of downloaded, hash-pinned `.conda` packages.
