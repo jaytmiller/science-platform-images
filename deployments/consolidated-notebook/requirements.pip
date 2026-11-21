@@ -1,0 +1,96 @@
+# Pip package list for the consolidated image, factored out of the Dockerfile.
+# One requirement per line; "#" starts a comment and blank lines are ignored.
+# The Dockerfile installs everything listed here in a single pip transaction
+# into the base (== mission, kernel python3) environment.
+#
+# This is the union of the common layer's common-env/*.pip lists (common,
+# docs, jupyter, required, testing) and the wrangler (generic-base) spec's
+# `common_pip_packages`. Duplicates across source lists are collapsed.
+
+# --- from common (common.pip) ---
+papermill
+ipykernel
+ipython
+boto3
+pipdeptree
+pip-tools
+pydeps
+nbgitpuller
+playwright
+flask
+psycopg2-binary
+requests
+ddtrace
+yq
+
+# --- from common (docs.pip) ---
+matplotlib
+sphinx
+sphinx-automodapi
+sphinx-rtd-theme
+stsci-rtd-theme
+sphinx-astropy
+nbsphinx
+
+# --- from common (jupyter.pip) ---
+jupyterhub
+jupyterlab
+notebook
+# (bqplot and jupyter-collaboration carry the wrangler spec's constraints)
+bqplot>=0.12.47,<0.13
+glue-jupyter
+ipysplitpanes
+ipygoldenlayout
+jupyter-client
+jupyter-core
+jupyterlab-widgets
+ipywidgets
+ipydatawidgets
+jupyterlab-pygments
+jupyter-server
+bqplot-image-gl
+jupyter-collaboration<5
+jupyter-server-proxy
+jupyter-packaging
+ipyevents
+ipympl
+ipyvolume
+ipyvuetify
+ipywebrtc
+jupyter-resource-usage
+sidecar
+jupyter_bokeh
+solara
+ipypopout
+anywidget
+jupytext
+jupyter-app-launcher
+voila>=0.5.11,<0.6
+#nbdime
+git+https://github.com/spacetelescope/stsci-announce.git
+
+# --- from common (required.pip: packages required for the framework to work) ---
+# ipykernel (above) is needed to install a kernel
+# papermill (above) is needed to run headless notebook tests
+GitPython
+
+# --- from common (testing.pip) ---
+ci-watson
+pytest
+pytest-doctestplus
+requests_mock
+pytest-openfiles
+#pytest-cov
+#codecov
+flake8
+distlib
+
+# --- from wrangler (spec common_pip_packages) ---
+# nb-wrangler itself: the production spec pins the tool to spacetelescope
+# @main; for wrangler development use the spec's dev_overrides value
+# git+https://github.com/jaytmiller/nb-wrangler@dev instead.
+git+https://github.com/spacetelescope/nb-wrangler@main
+bqplot-gl==0.0.0
+motorcycle==0.1.2
+dotenv
+jupyter-server-ydoc<3

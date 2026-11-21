@@ -1,0 +1,74 @@
+#!/bin/bash
+
+(
+
+HUB_FLAG=${1:-"on-hub"}
+
+set -e  # Quota check failures block logins by design.
+
+function divider {
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+}
+
+source /opt/common-scripts/env-activate base
+
+#
+# There are a number of steps we skip unless we're running on the science platform
+#
+if [[ $HUB_FLAG == "on-hub" ]]; then
+    # .............................................................................................
+    # Quota checking is only relevant to cloud deployments,  standalone sessions have no quotas.
+    # By design,  if the EFS quota check fails,  the user will be blocked from logging in.  This
+    # feature is however currently turned off in EFS quota config so this check typically has no
+    # effect but could be enabled for any or all users by a change in configuration.
+    # .............................................................................................
+
+    /opt/common-scripts/wrangler-check-efs-quota
+    divider
+
+    # .............................................................................................
+    # In general, failure of a step should not prevent logins enabling users to correct
+    # any issues with $HOME state and re-login w/o direct admin assistance.
+    # .............................................................................................
+
+    set +e
+
+    # .............................................................................................
+    # Initialize $HOME with things like rc-files, conda setup.  NOTE this is generally a one-time
+    # event ATM
+    # .............................................................................................
+
+    /opt/common-scripts/copy-default-home  $HUB_FLAG
+    divider
+
+    # .............................................................................................
+    # # CRDS cache setup and sharing
+    #
+    # Only a hub installation is guaranteed to have a shared CRDS cache
+    # which can be exploited by symlinking.  Note that this symlinking
+    # process is a definite improvement over normal CRDS caching since a
+    # user's cache can share system files while remaining writable for
+    # files which are not available globally.
+    # .............................................................................................
+
+    /opt/common-scripts/wrangler-symlink-crds
+    divider
+
+    # .............................................................................................
+    # Sync reference notebook directories / branches.
+    # .............................................................................................
+
+    /opt/common-scripts/wrangler-sync-notebooks
+    divider
+fi
+
+/opt/common-scripts/wrangler-register-kernel
+divider
+
+/opt/common-scripts/wrangler-install-jupyter-app-launcher
+divider
+
+# Make sure the script does not *return* fail blocking spawn
+exit 0
+
+) 2>&1 | tee $HOME/.post-start-hook.log

@@ -105,3 +105,9 @@ apt-file
 libxpa-dev
 libxt-dev
 libbz2-dev
+
+# --- from wrangler: jdaviz / GL dependencies ---
+libgl1-mesa-dev
+libglu1-mesa-dev
+libglfw3-dev
+libglew-dev

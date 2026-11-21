@@ -3,21 +3,29 @@
 
 # Consolidated image: a single Dockerfile that flattens the
 #   docker-stacks-foundation -> base-notebook -> minimal-notebook
-# inheritance chain AND the science-platform-images shared layer
-# (deployments/common/Dockerfile) into one build.
+# inheritance chain, the science-platform-images shared layer
+# (deployments/common), AND the wrangler (generic-base) deployment
+# (deployments/wrangler) into one build.
 #
 # All layers, packages, scripts, and configs from the source images are
 # preserved in build order. The two pinned build stages (root OS and Micromamba)
 # carry the digest pinning forward from docker-stacks-foundation.
 #
-# External dependencies were minimized during consolidation:
+# External dependencies and dynamic mechanisms were minimized during
+# consolidation:
 #   * sudo is never installed (the common layer removed it as a security risk),
 #     so the sudoers edits from the foundation layer were dropped.
 #   * The AWS CLI zip download from https://awscli.amazonaws.com was replaced
 #     by the conda-forge `awscli` package in requirements.mamba.
 #   * The dead nb-wrangler install block and its /tmp/nbw-wrangler-spec.yaml
-#     copy were dropped; deployments still carry and use their own
-#     environments/nbw-wrangler-spec.yaml.
+#     copy were dropped from the common layer.
+#   * The wrangler deployment's dynamic curation flow (install-common reading
+#     common-env/*.conda|.pip plus `nbw --reinstall` resolving the spec at
+#     build time) was flattened into the static, checked-in
+#     `requirements.mamba`/`requirements.pip` package lists; /opt/common-env no
+#     longer exists. nb-wrangler itself is installed from the pinned git URL
+#     listed in requirements.pip so the runtime `nbw` command (used by
+#     global_bashrc, post-start-hook, and the test scripts) works unchanged.
 #
 # Lock-readiness notes (for a future "locked" variant of this image):
 #   * Both root inputs are digest-pinned (Ubuntu and the Micromamba image), so
@@ -277,7 +285,6 @@ RUN source /etc/nb-wrangler.rc && \
 
 USER ${NB_UID}:${NB_GID}
 COPY --chown=${NB_UID}:${NB_GID} common-scripts/ /opt/common-scripts
-COPY --chown=${NB_UID}:${NB_GID} common-env/ /opt/common-env
 COPY --chown=${NB_UID}:${NB_GID} default-home-contents/ /etc/default-home-contents
 COPY --chown=${NB_UID}:${NB_GID} tools/ /opt/tools/
 COPY --chown=${NB_UID}:${NB_GID} VERSION /opt
@@ -288,6 +295,70 @@ COPY --chown=${NB_UID}:${NB_GID} HASH /opt
 USER root
 RUN chown -R ${NB_UID}:${NB_GID} $HOME /opt/conda && \
     fix-permissions $HOME /opt/conda
+
+# =========================================================================
+# Content added by the wrangler (generic-base) deployment layer
+# (deployments/wrangler), merged in above ordering. The wrangler mission
+# environment *is* the base environment (kernel python3), so no second conda
+# environment is created: the mission packages from the spec were merged into
+# `requirements.mamba`/`requirements.pip`, and the nb-wrangler bootstrap step
+# is just the nb-wrangler entry in `requirements.pip`.
+
+# Remove the base-environment conda-meta lock owned by root so the base
+# environment remains updatable
+RUN chown ${NB_UID}:${NB_GID} /opt/conda/conda-meta && \
+    rm -f /opt/conda/conda-meta/conda-meta.lock
+
+# Suppress tensorflow warnings by default, ERROR and up only
+ENV TF_CPP_MIN_LOG_LEVEL=2
+
+# Notebook content and the wrangler spec (source of the kernel name, app
+# launcher items, environment variables, and notebook tests), plus the frozen
+# environment records kept for provenance
+COPY --chown=${NB_UID}:${NB_GID} environments/ /opt/environments/
+COPY --chown=${NB_UID}:${NB_GID} env-frozen/ /opt/env-frozen/
+COPY --chown=${NB_UID}:${NB_GID} MISSION_VERSION /opt/MISSION_VERSION
+COPY --chown=${NB_UID}:${NB_GID} MISSION_HASH /opt/MISSION_HASH
+
+# Jupyter server extension allowing the notebook server to be stopped from the
+# Lab GUI (/srv/jupyter is on PYTHONPATH via /opt/environments/nbw-exports.sh)
+COPY stop_server_ext.json /etc/jupyter/jupyter_server_config.d/stop_server_ext.json
+RUN mkdir -p /srv/jupyter
+COPY --chown=${NB_UID}:${NB_GID} stop_server_ext.py /srv/jupyter/stop_server_ext.py
+
+# Enable deletion of non-empty directories from lab GUI
+RUN echo "# -------------------------------- STSCI Config Overwrites --------------------------------" \
+      >> /etc/jupyter/jupyter_notebook_config.py &&\
+    echo "c.FileContentsManager.delete_to_trash = False" >> /etc/jupyter/jupyter_notebook_config.py &&\
+    echo "c.FileContentsManager.always_delete_dir = True" >> /etc/jupyter/jupyter_notebook_config.py &&\
+    echo "# -------------------------------- STSCI Config Overwrites --------------------------------" \
+      >> /etc/jupyter/jupyter_server_config.py &&\
+    echo "c.FileContentsManager.delete_to_trash = False" >> /etc/jupyter/jupyter_server_config.py &&\
+    echo "c.FileContentsManager.always_delete_dir = True" >> /etc/jupyter/jupyter_server_config.py
+
+# Install all Python (pip) packages in a single transaction; this replaces the
+# old install-common/env-sync flow and the nbw --reinstall curation step (the
+# pinned requirements those produced are now checked in statically)
+USER ${NB_UID}
+COPY requirements.pip /tmp/requirements.pip
+RUN pip install ${PIP_SWITCHES} -r /tmp/requirements.pip && \
+    rm -f /tmp/requirements.pip && \
+    /opt/common-scripts/env-clean
+
+# Populate $HOME from /etc/default-home-contents, register the mission kernel,
+# and install the jupyter app launcher items ("docker" == skip hub-only steps)
+RUN /opt/environments/post-start-hook docker
+
+# Deployment shell setup: resolves the default environment name from the spec
+# and activates it in every shell
+USER root
+COPY global_bashrc /tmp/global_bashrc
+RUN  cat /tmp/global_bashrc /opt/environments/nbw-exports.sh >> /etc/bash.bashrc && \
+     cat /tmp/global_bashrc /opt/environments/nbw-exports.sh >> /etc/bash.env && \
+     rm -f /tmp/global_bashrc
+
+# Provenance marker for frozen vs. floating requirement sets
+RUN [ "${USE_FROZEN}" -eq "1" ] && echo >/opt/FROZEN || echo >/opt/FLOATING
 
 RUN rm -rf "/home/${NB_USER}/.cache/rosetta"
 

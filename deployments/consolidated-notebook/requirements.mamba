@@ -32,6 +32,22 @@ nbclassic
 # More info: https://github.com/jupyter/docker-stacks/pull/2167
 notebook>=7.2.2
 
+# --- from common: common-env/common.conda (base environment tooling) ---
+pip
+pip-tools
+setuptools<82.0.0
+jupyter-packaging
+nodejs>=22.0,<26.0a0
+
+# --- from wrangler: mission environment packages (kernel python3 == base) ---
+# The wrangler model installs the mission environment into the base
+# environment, so these merge directly into this single transaction.
+jupyter
+ipykernel
+cython
+uv
+wheel
+
 # --- from common ---
 # The common layer installed the AWS CLI by downloading awscliv2.zip from
 # https://awscli.amazonaws.com; the consolidated image installs the equivalent
