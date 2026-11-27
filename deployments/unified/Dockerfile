@@ -88,7 +88,7 @@ ENV PATH="${CONDA_DIR}/bin:${PATH}" \
     HOME="/home/${NB_USER}"
 
 # Copy a script that we will use to correct permissions after running certain commands
-COPY fix-permissions /usr/local/bin/fix-permissions
+COPY docker-stacks-scripts/fix-permissions /usr/local/bin/fix-permissions
 RUN chmod a+rx /usr/local/bin/fix-permissions
 
 # Enable prompt color in the skeleton .bashrc before creating the default NB_USER
@@ -174,9 +174,9 @@ RUN --mount=type=bind,from=micromamba,source=/bin/micromamba,target=/usr/local/b
     fix-permissions "/home/${NB_USER}"
 
 # Copy local files as late as possible to avoid cache busting
-COPY _docker_stacks_log.sh run-hooks.sh start.sh /usr/local/bin/
-COPY start-notebook.py start-notebook.sh start-singleuser.py start-singleuser.sh /usr/local/bin/
-COPY jupyter_server_config.py docker_healthcheck.py /etc/jupyter/
+COPY docker-stacks-scripts/_docker_stacks_log.sh docker-stacks-scripts/run-hooks.sh docker-stacks-scripts/start.sh /usr/local/bin/
+COPY docker-stacks-scripts/start-notebook.py docker-stacks-scripts/start-notebook.sh docker-stacks-scripts/start-singleuser.py docker-stacks-scripts/start-singleuser.sh /usr/local/bin/
+COPY docker-stacks-scripts/jupyter_server_config.py docker-stacks-scripts/docker_healthcheck.py /etc/jupyter/
 
 # Configure container entrypoint and startup
 ENTRYPOINT ["tini", "-g", "--", "start.sh"]
@@ -197,7 +197,7 @@ USER root
 RUN mkdir /usr/local/bin/start-notebook.d && \
     mkdir /usr/local/bin/before-notebook.d
 
-COPY 10activate-conda-env.sh /usr/local/bin/before-notebook.d/
+COPY docker-stacks-scripts/10activate-conda-env.sh /usr/local/bin/before-notebook.d/
 
 # Fix permissions on /etc/jupyter as root
 RUN fix-permissions /etc/jupyter/
@@ -206,7 +206,7 @@ RUN fix-permissions /etc/jupyter/
 COPY --chown=${NB_UID}:${NB_GID} Rprofile.site /opt/conda/lib/R/etc/
 
 # Add setup scripts that may be used by downstream images or inherited images
-COPY setup-scripts/ /opt/setup-scripts/
+COPY docker-stacks-scripts/setup-scripts/ /opt/setup-scripts/
 
 RUN rm -rf "/home/${NB_USER}/.cache/rosetta"
 
