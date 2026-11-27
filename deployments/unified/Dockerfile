@@ -1,0 +1,216 @@
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+
+# Consolidated image: a single Dockerfile that flattens the
+#   docker-stacks-foundation -> base-notebook -> minimal-notebook
+# inheritance chain into one build.
+#
+# All layers, packages, scripts, and configs from the three source images are
+# preserved in build order. The two pinned build stages (root OS and Micromamba)
+# carry the digest pinning forward from docker-stacks-foundation.
+#
+# Lock-readiness notes (for a future "locked" variant of this image):
+#   * Both root inputs are digest-pinned (Ubuntu and the Micromamba image), so
+#     the solver and the base OS are byte-reproducible.
+#   * Every conda package is listed in `requirements.mamba` and installed in a
+#     single `micromamba install` transaction targeting ${CONDA_DIR}. To
+#     produce a locked variant, generate a lockfile (e.g. conda-lock) from that
+#     package list and swap the install for an offline install against a
+#     directory of pre-downloaded, hash-pinned packages; nothing else about the
+#     layer order needs to change.
+#   * The apt package sets were already collapsed into a single apt RUN driven
+#     by `requirements.apt`, so the unlocked source is one apt transaction and
+#     one conda transaction.
+
+# This build arg allows building the image based on a different root image
+ARG ROOT_IMAGE=default_root_image
+
+# Ubuntu 26.04 (resolute)
+# https://hub.docker.com/_/ubuntu/tags?page=1&name=resolute
+# Referenced as a build stage, so dependabot is able to keep the version and digest up to date
+FROM ubuntu:26.04@sha256:065aa8626841f16057b78b027b464cd59c4fac36c204c72dcbf48d66f5fa8a96 AS default_root_image
+
+# Micromamba is taken from the official image, pinned by digest for integrity
+# Dependabot keeps this version and digest up to date (`docker` ecosystem covers this directory)
+# The binary is bind-mounted into the install RUN below, so it is not added to any image layer
+FROM mambaorg/micromamba:2.10.0@sha256:e1476182cd40eb1f7c0cfae4adec9bfd78f3d7f05c61368306abfdc8939c1198 AS micromamba
+
+FROM $ROOT_IMAGE
+
+LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
+ARG NB_USER="jovyan"
+ARG NB_UID="1000"
+ARG NB_GID="100"
+
+# Fix: https://github.com/hadolint/hadolint/wiki/DL4006
+# Fix: https://github.com/koalaman/shellcheck/wiki/SC3014
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+USER root
+
+# Install all OS dependencies in a single transaction using the package list
+# in `requirements.apt` (which combines the package sets of
+# docker-stacks-foundation, base-notebook, and minimal-notebook; package
+# metadata comments live in that file)
+ENV DEBIAN_FRONTEND=noninteractive
+COPY requirements.apt /tmp/requirements.apt
+RUN apt-get update --yes && \
+    # - `apt-get upgrade` is run to patch known vulnerabilities in system packages
+    #   as the Ubuntu base image is rebuilt too seldom sometimes (less than once a month)
+    apt-get upgrade --yes && \
+    # Strip comments from `requirements.apt` and install the package list in
+    # one transaction; `xargs` splits the remaining whitespace-separated names
+    sed 's/#.*//' /tmp/requirements.apt | xargs --no-run-if-empty \
+        apt-get install --yes --no-install-recommends && \
+    rm -f /tmp/requirements.apt && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    # - The Ubuntu 26.04 image ships Canonical's Pebble service manager as a bare
+    #   /usr/bin/pebble, owned by no package, so `apt-get upgrade` cannot patch it.
+    #   The images start with tini and never run it, so remove it
+    rm -rf /usr/bin/pebble /var/lib/pebble && \
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    echo "C.UTF-8 UTF-8" >> /etc/locale.gen && \
+    locale-gen
+
+# Create alternative for nano -> nano-tiny
+RUN update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 10
+
+# Configure environment
+ENV CONDA_DIR=/opt/conda \
+    SHELL=/bin/bash \
+    NB_USER="${NB_USER}" \
+    NB_UID=${NB_UID} \
+    NB_GID=${NB_GID} \
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    LANGUAGE=C.UTF-8
+ENV PATH="${CONDA_DIR}/bin:${PATH}" \
+    HOME="/home/${NB_USER}"
+
+# Copy a script that we will use to correct permissions after running certain commands
+COPY fix-permissions /usr/local/bin/fix-permissions
+RUN chmod a+rx /usr/local/bin/fix-permissions
+
+# Enable prompt color in the skeleton .bashrc before creating the default NB_USER
+# hadolint ignore=SC2016
+RUN sed -i 's/^#force_color_prompt=yes/force_color_prompt=yes/' /etc/skel/.bashrc && \
+    # More information in: https://github.com/jupyter/docker-stacks/pull/2047
+    # and docs: https://docs.conda.io/projects/conda/en/latest/dev-guide/deep-dives/activation.html
+    echo 'eval "$(conda shell.bash hook)"' >> /etc/skel/.bashrc
+
+# Delete existing user with UID="${NB_UID}" if it exists
+RUN if id -un "${NB_UID}" >/dev/null 2>&1; then \
+        userdel --remove "$(id -un "${NB_UID}")"; \
+    fi
+
+# Create "${NB_USER}" user (`jovyan` by default) with UID="${NB_UID}" (`1000` by default) and in the 'users' group
+# and make sure these dirs are writable by the `users` group.
+RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
+    sed -i.bak -e 's/^%admin/#%admin/' /etc/sudoers && \
+    sed -i.bak -e 's/^%sudo/#%sudo/' /etc/sudoers && \
+    useradd --no-log-init --create-home --shell /bin/bash --uid "${NB_UID}" --no-user-group "${NB_USER}" && \
+    mkdir -p "${CONDA_DIR}" && \
+    chown "${NB_USER}:${NB_GID}" "${CONDA_DIR}" && \
+    chmod g+w /etc/passwd && \
+    fix-permissions "${CONDA_DIR}" && \
+    fix-permissions "/home/${NB_USER}"
+
+# Pre-create the cache dir owned by the user, macOS Rosetta junk can then only appear inside it
+RUN rm -rf "/home/${NB_USER}/.cache/" && \
+    mkdir -p "/home/${NB_USER}/.cache" && \
+    chown "${NB_USER}:${NB_GID}" "/home/${NB_USER}/.cache"
+
+USER ${NB_UID}
+
+# Pin the Python version here, or set it to "default"
+ARG PYTHON_VERSION=3.13
+
+# Setup work directory for backward-compatibility
+RUN mkdir "/home/${NB_USER}/work" && \
+    fix-permissions "/home/${NB_USER}"
+
+# Install the Conda prefix using Micromamba from the digest-pinned official image (see top of this file).
+#   <https://github.com/mamba-org/mamba#micromamba>
+#   Similar projects using Micromamba:
+#     - Micromamba-Docker: <https://github.com/mamba-org/micromamba-docker>
+#     - repo2docker: <https://github.com/jupyterhub/repo2docker>
+# Install the packages listed in `requirements.mamba` (Python and Mamba and
+# jupyter_core from docker-stacks-foundation; JupyterHub, JupyterLab, NBClassic
+# and Jupyter Notebook from base-notebook), with the placeholder tokens in that
+# file replaced with the pinned micromamba version and the PYTHON_VERSION arg.
+# Generate a Jupyter Server config.
+# Cleanup temporary files.
+# Correct permissions.
+# Do all this in a single RUN command to avoid duplicating all of the
+# files across image layers when the permissions change.
+# This is the single package transaction that a lockfile would pin down.
+COPY --chown="${NB_UID}:${NB_GID}" initial-condarc "${CONDA_DIR}/.condarc"
+COPY requirements.mamba /tmp/requirements.mamba
+WORKDIR /tmp
+RUN --mount=type=bind,from=micromamba,source=/bin/micromamba,target=/usr/local/bin/micromamba \
+    set -x && \
+    PYTHON_SUFFIX="=${PYTHON_VERSION}" && \
+    if [ "${PYTHON_VERSION}" = "default" ]; then PYTHON_SUFFIX=""; fi && \
+    # Replace the `@MAMBA_VERSION@` token with the version of the pinned
+    # micromamba binary and the `@PYTHON@` token with the Python version
+    # constraint, then strip comments and collapse the list to a single
+    # whitespace-separated line for the install
+    PKGS="$(sed -e "s/@MAMBA_VERSION@/$(micromamba --version)/" -e "s/@PYTHON@/${PYTHON_SUFFIX}/" /tmp/requirements.mamba | sed 's/#.*//' | tr -s '[:space:]' ' ')" && \
+    # Install the packages in one transaction targeting ${CONDA_DIR}
+    micromamba install \
+        --root-prefix="${CONDA_DIR}" \
+        --prefix="${CONDA_DIR}" \
+        --yes \
+        ${PKGS} && \
+    # rm -f /tmp/requirements.mamba && \
+    # Pin major.minor version of python
+    # https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-pkgs.html#preventing-packages-from-updating-pinning
+    mamba list --full-name 'python' | awk 'END{sub("[^.]*$", "*", $2); print $1 " " $2}' >> "${CONDA_DIR}/conda-meta/pinned" && \
+    jupyter server --generate-config && \
+    mamba clean --all -f -y && \
+    jupyter lab clean && \
+    rm -rf "/home/${NB_USER}/.cache/yarn" && \
+    fix-permissions "${CONDA_DIR}" && \
+    fix-permissions "/home/${NB_USER}"
+
+# Copy local files as late as possible to avoid cache busting
+COPY _docker_stacks_log.sh run-hooks.sh start.sh /usr/local/bin/
+COPY start-notebook.py start-notebook.sh start-singleuser.py start-singleuser.sh /usr/local/bin/
+COPY jupyter_server_config.py docker_healthcheck.py /etc/jupyter/
+
+# Configure container entrypoint and startup
+ENTRYPOINT ["tini", "-g", "--", "start.sh"]
+CMD ["start-notebook.py"]
+
+ENV JUPYTER_PORT=8888
+EXPOSE $JUPYTER_PORT
+
+# HEALTHCHECK documentation: https://docs.docker.com/engine/reference/builder/#healthcheck
+# This healtcheck works well for `lab`, `notebook`, `nbclassic`, `server`, and `retro` jupyter commands
+# https://github.com/jupyter/docker-stacks/issues/915#issuecomment-1068528799
+HEALTHCHECK --interval=3s --timeout=1s --start-period=3s --retries=3 \
+    CMD ["/etc/jupyter/docker_healthcheck.py"]
+
+USER root
+
+# Create dirs for startup hooks
+RUN mkdir /usr/local/bin/start-notebook.d && \
+    mkdir /usr/local/bin/before-notebook.d
+
+COPY 10activate-conda-env.sh /usr/local/bin/before-notebook.d/
+
+# Fix permissions on /etc/jupyter as root
+RUN fix-permissions /etc/jupyter/
+
+# Add an R mimetype option to specify how the plot returns from R to the browser
+COPY --chown=${NB_UID}:${NB_GID} Rprofile.site /opt/conda/lib/R/etc/
+
+# Add setup scripts that may be used by downstream images or inherited images
+COPY setup-scripts/ /opt/setup-scripts/
+
+RUN rm -rf "/home/${NB_USER}/.cache/rosetta"
+
+# Switch back to jovyan to avoid accidental container runs as root
+USER ${NB_UID}
+
+WORKDIR "${HOME}"
